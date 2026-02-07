@@ -21,6 +21,7 @@ import frc.robot.Constants;
 import frc.robot.commands.ExtendIntake;
 import frc.robot.commands.RetractIntake;
 import frc.robot.commands.RunIntake;
+import frc.robot.commands.UpdatePose;
 import frc.robot.subsystems.Intake;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
@@ -51,6 +52,7 @@ public class RobotContainer {
     private final CommandXboxController operatorJoystick = new CommandXboxController(Constants.Controller.kOperatorControllerPort);
 
     private final Intake m_intake = new Intake();
+    public final Vision m_vision = new Vision(drivetrain);
 
     public RobotContainer() {
         configureBindings();
@@ -90,6 +92,11 @@ public class RobotContainer {
         // reset the field-centric heading on left bumper press
         driveJoystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
         // #endregion Swerve
+
+        // While the robot is not disabled (auto, teleop), add vision measurements to pose
+        RobotModeTriggers.disabled().whileFalse(
+            new UpdatePose(vision)
+        );
 
         // #region Intake
         driveJoystick.a().whileTrue(

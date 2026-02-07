@@ -42,13 +42,6 @@ public class Vision extends SubsystemBase {
         poseEstimator = new PhotonPoseEstimator(kTagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, kRobotToCam);
     }
 
-    /**
-     * No-arg constructor kept for compatibility (won't have access to drivetrain pose).
-     */
-    public Vision() {
-        this(null);
-    }
-
     @Override
     public void periodic() {
 
