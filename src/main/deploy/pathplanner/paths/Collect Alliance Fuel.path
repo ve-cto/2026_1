@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 1.3431532258064522,
+        "y": 5.856314516129032
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 0.7726209677419362,
+        "y": 5.827056451612903
+      },
+      "isLocked": false,
+      "linkedName": "Outside Alliance Fuel"
+    },
+    {
+      "anchor": {
+        "x": 0.5678145161290329,
+        "y": 5.856314516129032
+      },
+      "prevControl": {
+        "x": 1.233435483870969,
+        "y": 5.900201612903227
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "In Alliance Fuel"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 1.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 180.0
+  },
+  "reversed": false,
+  "folder": "Field Left",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -179.36340642403653
+  },
+  "useDefaultConstraints": false
+}

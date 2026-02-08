@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.256350626118068,
+        "y": 3.9782110912343462
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 3.2417215938585966,
+        "y": 5.177791736394298
+      },
+      "isLocked": false,
+      "linkedName": "Front of Hub"
+    },
+    {
+      "anchor": {
+        "x": 2.908459677419355,
+        "y": 7.348475806451614
+      },
+      "prevControl": {
+        "x": 2.908459677417948,
+        "y": 6.968120967741935
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "reversed": false,
+  "folder": "Field Left",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "useDefaultConstraints": true
+}

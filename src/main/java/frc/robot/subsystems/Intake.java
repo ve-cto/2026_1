@@ -27,7 +27,7 @@ public class Intake extends SubsystemBase {
 
     public void periodic() {
         armPosition = s_armEncoder.get();
-        if (armPositionHistory.size() == 5) {
+        if (armPositionHistory.size() >= 3) {
             armPositionHistory.poll();
         }
         armPositionHistory.add(armPosition);

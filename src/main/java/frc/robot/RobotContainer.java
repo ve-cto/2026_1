@@ -10,11 +10,16 @@ import org.photonvision.PhotonCamera;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
-
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.FollowPathCommand;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import frc.robot.Constants;
@@ -48,13 +53,24 @@ public class RobotContainer {
     public final Vision vision = new Vision(drivetrain);
     // #endregion Swerve setup
 
-    private final CommandXboxController driveJoystick = new CommandXboxController(Constants.Controller.kDriverControllerPort);
-    private final CommandXboxController operatorJoystick = new CommandXboxController(Constants.Controller.kOperatorControllerPort);
+    // private final CommandXboxController driveJoystick = new CommandXboxController(Constants.Controller.kDriverControllerPort);
+    // private final CommandXboxController operatorJoystick = new CommandXboxController(Constants.Controller.kOperatorControllerPort);
 
+    private final CommandPS4Controller driveJoystick = new CommandPS4Controller(Constants.Controller.kDriverControllerPort);
+    private final CommandPS4Controller operatorJoystick = new CommandPS4Controller(Constants.Controller.kOperatorControllerPort);
+    
     private final Intake m_intake = new Intake();
-    public final Vision m_vision = new Vision(drivetrain);
+    // NOTE: don't create a second Vision instance — use the single `vision` above.
+
+    private final SendableChooser<Command> autoChooser;
 
     public RobotContainer() {
+        autoChooser = AutoBuilder.buildAutoChooser();
+        SmartDashboard.putData("Auto Chooser", autoChooser);
+        
+        // Warm up path generation
+        CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
+
         configureBindings();
     }
 
@@ -67,6 +83,7 @@ public class RobotContainer {
                     .withVelocityY(-driveJoystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
                     .withRotationalRate(-driveJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
+            
         );
         
         // Idle while disabled
@@ -76,9 +93,10 @@ public class RobotContainer {
         );
 
         // Brake while holding right bumper
-        driveJoystick.rightBumper().whileTrue(drivetrain.applyRequest(() -> brake));
+        // driveJoystick.rightBumper().whileTrue(drivetrain.applyRequest(() -> brake));
+        driveJoystick.R1().whileTrue(drivetrain.applyRequest(() -> brake));
 
-        driveJoystick.b().whileTrue(drivetrain.applyRequest(() ->
+        driveJoystick.triangle().whileTrue(drivetrain.applyRequest(() ->
             point.withModuleDirection(new Rotation2d(-driveJoystick.getLeftY(), -driveJoystick.getLeftX()))
         ));
 
@@ -90,7 +108,8 @@ public class RobotContainer {
         // driveJoystick.start().and(driveJoystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
         // reset the field-centric heading on left bumper press
-        driveJoystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
+        // driveJoystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
+        driveJoystick.L1().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
         // #endregion Swerve
 
         // While the robot is not disabled (auto, teleop), add vision measurements to pose
@@ -99,11 +118,19 @@ public class RobotContainer {
         );
 
         // #region Intake
-        driveJoystick.a().whileTrue(
+        // driveJoystick.x().whileTrue(
+        //     new RunIntake(m_intake, Constants.Intake.kIntakeForwardSpeed)
+        // );
+
+        // driveJoystick.b().whileTrue(
+        //     new RunIntake(m_intake, Constants.Intake.kIntakeReverseSpeed)
+        // );
+
+        driveJoystick.cross().whileTrue(
             new RunIntake(m_intake, Constants.Intake.kIntakeForwardSpeed)
         );
 
-        driveJoystick.b().whileTrue(
+        driveJoystick.circle().whileTrue(
             new RunIntake(m_intake, Constants.Intake.kIntakeReverseSpeed)
         );
 
@@ -121,6 +148,7 @@ public class RobotContainer {
     
 
     public Command getAutonomousCommand() {
-        return Commands.print("No autonomous command configured");
+        // Return the auto selected by the chooser
+        return autoChooser.getSelected();
     }
 }

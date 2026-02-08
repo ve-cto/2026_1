@@ -36,7 +36,7 @@ public final class Constants {
 
     public static final class Vision {
         public static final String kCameraNameAlpha = "limelight3g";
-        public static final String kCameraNameBeta = "null";
+        public static final String kCameraNameBeta = "limelight";
     }
 
     public static class Led {
