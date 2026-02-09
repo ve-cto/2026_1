@@ -113,9 +113,9 @@ public class RobotContainer {
         // #endregion Swerve
 
         // While the robot is not disabled (auto, teleop), add vision measurements to pose
-        RobotModeTriggers.disabled().whileFalse(
-            new UpdatePose(vision)
-        );
+        // RobotModeTriggers.disabled().whileFalse(
+        //     new UpdatePose(vision)
+        // );
 
         // #region Intake
         // driveJoystick.x().whileTrue(

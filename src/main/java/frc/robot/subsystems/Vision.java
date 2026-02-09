@@ -1,6 +1,9 @@
 package frc.robot.subsystems;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
@@ -10,12 +13,15 @@ import org.photonvision.estimation.TargetModel;
 import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
+import org.photonvision.targeting.PhotonPipelineResult;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -51,6 +57,24 @@ public class Vision extends SubsystemBase {
     private final VisionSystemSim visionSim = new VisionSystemSim("sim");
     private final TargetModel targetModel = TargetModel.kAprilTag36h11;
 
+    private List<PhotonPipelineResult> resultsAlpha;
+    
+    // Executor to run expensive vision estimation off the main thread so commands/periodics stay fast
+    private final ExecutorService visionExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "vision-thread");
+        t.setDaemon(true);
+        return t;
+    });
+
+    // Pending estimate produced by the background thread; applied quickly on the main thread in periodic()
+    private volatile Pose2d pendingPose2d = null;
+    private volatile double pendingTimestamp = 0.0;
+    private volatile boolean pendingEstimateAvailable = false;
+
+    double[] networkPose = {0.0, 0.0, 0.0};
+    double[] diff = networkPose;
+    Pose2d drivetrainPose = new Pose2d();
+
     public Vision(CommandSwerveDrivetrain drivetrain) {
         m_drivetrain = drivetrain;
         poseEstimator = new PhotonPoseEstimator(kTagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, kRobotToCamAlpha);
@@ -75,58 +99,104 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // commented because simulateable camera's haven't been created yet (TODO)
-        
-        // var resultAlpha = cameraAlpha.getLatestResult();
-        // // var resultBeta = cameraBeta.getLatestResult();
-    
-        // boolean targetVisibleAlpha = resultAlpha.hasTargets();
-        // // boolean targetVisibleBeta = resultBeta.hasTargets();
-    
-        // int targetIDBestAlpha = targetVisibleAlpha ? resultAlpha.getBestTarget().getFiducialId() : null;
-        // int targetIDBestBeta = targetVisibleBeta ? resultBeta.getBestTarget().getFiducialId() : null;
-
-        // if (targetIDAlpha != -1) {
-        //     if (Arrays.asList(hubTagsRed).contains(targetIDAlpha)) {
-        //         // System.out.println("Target is in Red Hub Tags");
-
-        //     } else if (Arrays.asList(hubTagsBlue).contains(targetIDAlpha)) {
-        //         // System.out.println("Target is in Blue Hub Tags");
-            
-        //     }
-        // }
+        // Apply any background vision estimate to the drivetrain quickly. Keep this path very cheap.
+        if (pendingEstimateAvailable) {
+            Pose2d pose = pendingPose2d;
+            double ts = pendingTimestamp;
+            if (pose != null) {
+                m_drivetrain.addVisionMeasurement(pose, ts);
+            }
+            pendingEstimateAvailable = false;
+        }
     }
 
     @Override
     public void simulationPeriodic() {
         // Pose2d drivetrainPose = m_drivetrain.getPose();
-        double[] placeholder = poseSubscriber.get();
+        this.networkPose = poseSubscriber.get();
+        if (networkPose[0] != diff[0] || networkPose[1] != diff[1] || networkPose[2] != diff[2]) {
+            Translation2d translation = new Translation2d(networkPose[0], networkPose[1]);
+            Rotation2d rotation = new Rotation2d(networkPose[2] * (Math.PI/180));
 
-        Translation2d translation = new Translation2d(placeholder[0], placeholder[1]);
-        Rotation2d rotation = new Rotation2d(placeholder[2] * (Math.PI/180));
-
-        Pose2d drivetrainPose = new Pose2d(translation, rotation);
-
-        // System.out.println(drivetrainPose.toString()); // debug print
-        visionSim.update(drivetrainPose);
+            this.drivetrainPose = new Pose2d(translation, rotation);
+            visionSim.update(this.drivetrainPose);
+        }
+        this.diff = this.networkPose;
     }   
 
     public void addVisionMeasurement() {
         // only run if we aren't simulating
-        if (RobotBase.isReal()) {
-            Pose2d drivetrainPose = m_drivetrain.getPose(); 
-            poseEstimator.setReferencePose(drivetrainPose);
-            
-            for (var result : this.cameraAlpha.getAllUnreadResults()) {
-                poseEstimate = poseEstimator.estimateCoprocMultiTagPose(result);
-                if (poseEstimate.isEmpty()) {
-                    poseEstimate = poseEstimator.estimateLowestAmbiguityPose(result);
+        if (!RobotBase.isSimulation()) {
+            // Run the heavy PhotonPoseEstimator work off the main thread and publish a small, ready-to-apply
+            // result (Pose2d + timestamp). The main thread will apply it during its periodic() quickly.
+            final Pose2d reference = m_drivetrain.getPose();
+            poseEstimator.setReferencePose(reference);
+
+            visionExecutor.submit(() -> {
+                var result = cameraAlpha.getLatestResult();
+                if (result == null || !result.hasTargets()) {
+                    return;
                 }
-                
-                if (poseEstimate.isPresent()) {
-                    m_drivetrain.addVisionMeasurement(poseEstimate.get().estimatedPose.toPose2d(), result.getTimestampSeconds());
+
+                Optional<EstimatedRobotPose> estimateOpt = poseEstimator.estimateCoprocMultiTagPose(result);
+                if (estimateOpt.isEmpty()) {
+                    estimateOpt = poseEstimator.estimateLowestAmbiguityPose(result);
                 }
+
+                if (estimateOpt.isPresent()) {
+                    EstimatedRobotPose est = estimateOpt.get();
+                    // store small, simple values for the main thread to apply quickly
+                    pendingPose2d = est.estimatedPose.toPose2d();
+                    pendingTimestamp = result.getTimestampSeconds();
+                    pendingEstimateAvailable = true;
+                    poseEstimate = estimateOpt;
+                }
+            });
+        }
+    }
+
+    // /*
+    // * Return true if specifieed target is currently visible
+    // */    
+    public boolean getTargetVisible(int targetID) {
+        var result = this.cameraAlpha.getLatestResult();
+        if (result == null || !result.hasTargets()) {
+            return false;
+        }
+        for (var target : result.getTargets()) {
+            if (target.getFiducialId() == targetID) {
+                return true;
             }
         }
+        return false;
+    }
+
+    public Pose3d getTargetPoseRelative(int targetID) {  
+        var result = this.cameraAlpha.getLatestResult();
+        if (result == null || !result.hasTargets()) {
+            return null;
+        }
+        for (var target : result.getTargets()) {
+            if (target.getFiducialId() == targetID) {
+                // tag found
+                var targetBest = target.getBestCameraToTarget();
+                return new Pose3d(targetBest.getTranslation(), targetBest.getRotation());
+            }
+        }
+        // if the target isn't visible, return null.
+        return null;
+    }
+
+    public double[] getTargetAngles(int targetID) {
+        Pose3d targetPose = getTargetPoseRelative(targetID);
+        if (targetPose == null) {
+            return null;
+        }
+        Rotation3d targetRotation3d = targetPose.getRotation();
+
+        double pitch = targetRotation3d.getY();
+        double yaw = targetRotation3d.getZ();
+        double roll = targetRotation3d.getX();
+        return new double[] {roll, pitch, yaw};
     }
 }
