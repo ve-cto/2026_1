@@ -7,15 +7,19 @@ package frc.robot.commands;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Vision;
+
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
 public class DriveToPose extends Command {
-  CommandSwerveDrivetrain drivetrain;
   Vision vision;
+  CommandSwerveDrivetrain commandSwerveDrivetrain;
+  private final int targetID = 4;
 
   /** Creates a new DriveToPose. */
-  public DriveToPose() {
+  public DriveToPose(CommandSwerveDrivetrain commandSwerveDrivetrain, Vision vision) {
+    this.vision = vision;
+    this.commandSwerveDrivetrain = commandSwerveDrivetrain;
     // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(drivetrain);
+    addRequirements(commandSwerveDrivetrain);
   }
 
   // Called when the command is initially scheduled.
@@ -25,6 +29,7 @@ public class DriveToPose extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
+    vision.driveToPoseHelper(targetID, this.commandSwerveDrivetrain);
   }
 
   // Called once the command ends or is interrupted.
@@ -34,6 +39,9 @@ public class DriveToPose extends Command {
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    return false;
+    // End the command if the desired target is not defined in the field layout
+    // or is not currently visible. This prevents the command from holding the
+    // drivetrain requirement while doing nothing.
+    return vision.getTargetPose(targetID) == null;
   }
 }

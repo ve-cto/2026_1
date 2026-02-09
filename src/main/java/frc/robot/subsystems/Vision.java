@@ -17,6 +17,7 @@ import org.photonvision.targeting.PhotonPipelineResult;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -29,6 +30,8 @@ import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
@@ -36,8 +39,7 @@ public class Vision extends SubsystemBase {
     public PhotonPoseEstimator poseEstimator;
     public Optional<EstimatedRobotPose> poseEstimate = Optional.empty();
 
-    // final StructSubscriber<Pose2d> sub;
-
+    // get the robot pose fed to network tables - this is given to photonvision as a reference pose
     NetworkTableInstance ntInst = NetworkTableInstance.getDefault();
     NetworkTable table = ntInst.getTable("Pose");
     DoubleArraySubscriber poseSubscriber = table.getDoubleArrayTopic("robotPose").subscribe(new double[] {0.0, 0.0, 0.0});
@@ -58,18 +60,10 @@ public class Vision extends SubsystemBase {
     private final TargetModel targetModel = TargetModel.kAprilTag36h11;
 
     private List<PhotonPipelineResult> resultsAlpha;
-    
-    // Executor to run expensive vision estimation off the main thread so commands/periodics stay fast
-    private final ExecutorService visionExecutor = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "vision-thread");
-        t.setDaemon(true);
-        return t;
-    });
 
-    // Pending estimate produced by the background thread; applied quickly on the main thread in periodic()
-    private volatile Pose2d pendingPose2d = null;
-    private volatile double pendingTimestamp = 0.0;
-    private volatile boolean pendingEstimateAvailable = false;
+    // throttle sim uldates
+    private double m_lastVisionSimUpdate = 0.0;
+    private static final double kVisionSimMinDt = 0.05; // 50ms
 
     double[] networkPose = {0.0, 0.0, 0.0};
     double[] diff = networkPose;
@@ -79,7 +73,7 @@ public class Vision extends SubsystemBase {
         m_drivetrain = drivetrain;
         poseEstimator = new PhotonPoseEstimator(kTagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, kRobotToCamAlpha);
                 
-        // only set up sim if we're in sim, cuz like why waste resources
+        // only set up sim cameras if we're in sim
         if (RobotBase.isSimulation()) {
             visionSim.addAprilTags(kTagLayout);
             SimCameraProperties simCameraAlphaProp = new SimCameraProperties();
@@ -99,65 +93,72 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // Apply any background vision estimate to the drivetrain quickly. Keep this path very cheap.
-        if (pendingEstimateAvailable) {
-            Pose2d pose = pendingPose2d;
-            double ts = pendingTimestamp;
-            if (pose != null) {
-                m_drivetrain.addVisionMeasurement(pose, ts);
-            }
-            pendingEstimateAvailable = false;
-        }
+        //  implement later
+
+        // var resultAlpha = cameraAlpha.getLatestResult();
+        // // var resultBeta = cameraBeta.getLatestResult();
+    
+        // boolean targetVisibleAlpha = resultAlpha.hasTargets();
+        // // boolean targetVisibleBeta = resultBeta.hasTargets();
+    
+        // int targetIDBestAlpha = targetVisibleAlpha ? resultAlpha.getBestTarget().getFiducialId() : null;
+        // int targetIDBestBeta = targetVisibleBeta ? resultBeta.getBestTarget().getFiducialId() : null;
+
+        // if (targetIDAlpha != -1) {
+        //     if (Arrays.asList(hubTagsRed).contains(targetIDAlpha)) {
+        //         // System.out.println("Target is in Red Hub Tags");
+
+        //     } else if (Arrays.asList(hubTagsBlue).contains(targetIDAlpha)) {
+        //         // System.out.println("Target is in Blue Hub Tags");
+            
+        //     }
+        // }
     }
 
     @Override
     public void simulationPeriodic() {
-        // Pose2d drivetrainPose = m_drivetrain.getPose();
-        this.networkPose = poseSubscriber.get();
-        if (networkPose[0] != diff[0] || networkPose[1] != diff[1] || networkPose[2] != diff[2]) {
-            Translation2d translation = new Translation2d(networkPose[0], networkPose[1]);
-            Rotation2d rotation = new Rotation2d(networkPose[2] * (Math.PI/180));
-
-            this.drivetrainPose = new Pose2d(translation, rotation);
-            visionSim.update(this.drivetrainPose);
+        // throttle results (skip loop)
+        double now = Timer.getFPGATimestamp();
+        if (now - m_lastVisionSimUpdate < kVisionSimMinDt) {
+            return;
         }
+
+        this.networkPose = poseSubscriber.get();
+        Translation2d translation = new Translation2d(networkPose[0], networkPose[1]);
+        Rotation2d rotation = new Rotation2d(networkPose[2] * (Math.PI / 180));
+
+        this.drivetrainPose = new Pose2d(translation, rotation);
+        visionSim.update(this.drivetrainPose);
         this.diff = this.networkPose;
+        m_lastVisionSimUpdate = now;
     }   
+
+    public Pose2d getNetworkPose() {
+        return this.drivetrainPose;
+    }
 
     public void addVisionMeasurement() {
         // only run if we aren't simulating
-        if (!RobotBase.isSimulation()) {
-            // Run the heavy PhotonPoseEstimator work off the main thread and publish a small, ready-to-apply
-            // result (Pose2d + timestamp). The main thread will apply it during its periodic() quickly.
-            final Pose2d reference = m_drivetrain.getPose();
-            poseEstimator.setReferencePose(reference);
-
-            visionExecutor.submit(() -> {
-                var result = cameraAlpha.getLatestResult();
-                if (result == null || !result.hasTargets()) {
-                    return;
+        if (RobotBase.isReal()) {
+            Pose2d drivetrainPose = m_drivetrain.getPose(); 
+            poseEstimator.setReferencePose(drivetrainPose);
+            
+            for (var result : this.cameraAlpha.getAllUnreadResults()) {
+                poseEstimate = poseEstimator.estimateCoprocMultiTagPose(result);
+                if (poseEstimate.isEmpty()) {
+                    poseEstimate = poseEstimator.estimateLowestAmbiguityPose(result);
                 }
-
-                Optional<EstimatedRobotPose> estimateOpt = poseEstimator.estimateCoprocMultiTagPose(result);
-                if (estimateOpt.isEmpty()) {
-                    estimateOpt = poseEstimator.estimateLowestAmbiguityPose(result);
+                
+                if (poseEstimate.isPresent()) {
+                    m_drivetrain.addVisionMeasurement(poseEstimate.get().estimatedPose.toPose2d(), result.getTimestampSeconds());
                 }
-
-                if (estimateOpt.isPresent()) {
-                    EstimatedRobotPose est = estimateOpt.get();
-                    // store small, simple values for the main thread to apply quickly
-                    pendingPose2d = est.estimatedPose.toPose2d();
-                    pendingTimestamp = result.getTimestampSeconds();
-                    pendingEstimateAvailable = true;
-                    poseEstimate = estimateOpt;
-                }
-            });
+            }
         }
     }
 
-    // /*
-    // * Return true if specifieed target is currently visible
-    // */    
+    /*
+    * Return true if specified target is currently visible
+    */    
     public boolean getTargetVisible(int targetID) {
         var result = this.cameraAlpha.getLatestResult();
         if (result == null || !result.hasTargets()) {
@@ -171,7 +172,11 @@ public class Vision extends SubsystemBase {
         return false;
     }
 
-    public Pose3d getTargetPoseRelative(int targetID) {  
+    /*
+     * Gets a target pose from what the robot currently sees
+     * return Pose3d
+     */
+    public Pose3d getTargetPoseRobotRelative(int targetID) {  
         var result = this.cameraAlpha.getLatestResult();
         if (result == null || !result.hasTargets()) {
             return null;
@@ -187,8 +192,35 @@ public class Vision extends SubsystemBase {
         return null;
     }
 
+    /*
+     * Gets a targets pose from the field map
+     * return Pose3d
+     */
+    public Pose3d getTargetPose(int targetID) {
+        if (kTagLayout.getTagPose(targetID).isPresent()) {
+            Pose3d target = kTagLayout.getTagPose(targetID).get();
+            return target;
+        }
+        return null; 
+    }
+
+    /*
+     * Gets a target pose from the field map IF it is currently visible
+     * return Pose3d
+     */
+    public Pose3d getVisibleTargetPose(int targetID) {
+        if (getTargetVisible(targetID)) {
+            return getTargetPose(targetID);
+        }
+        return null;
+    }
+
+    /*
+     * Gets the X, Y, and Z rotation values of a visible target
+     * return double[3]
+     */
     public double[] getTargetAngles(int targetID) {
-        Pose3d targetPose = getTargetPoseRelative(targetID);
+        Pose3d targetPose = getTargetPoseRobotRelative(targetID);
         if (targetPose == null) {
             return null;
         }
@@ -198,5 +230,15 @@ public class Vision extends SubsystemBase {
         double yaw = targetRotation3d.getZ();
         double roll = targetRotation3d.getX();
         return new double[] {roll, pitch, yaw};
+    }
+
+    public void driveToPoseHelper(int targetID, CommandSwerveDrivetrain commandSwerveDrivetrain) {
+        var targetPose3d = getTargetPose(targetID);
+        if (targetPose3d == null) {
+            // Target not present in field layout (or not available) - do nothing.
+            // Avoid throwing a NullPointerException when callers assume a pose exists.
+            return;
+        }
+        commandSwerveDrivetrain.driveToPose(targetPose3d.toPose2d(), Vision.this);
     }
 }

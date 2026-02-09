@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import frc.robot.Constants;
+import frc.robot.commands.DriveToPose;
 import frc.robot.commands.ExtendIntake;
 import frc.robot.commands.RetractIntake;
 import frc.robot.commands.RunIntake;
@@ -68,7 +69,7 @@ public class RobotContainer {
         autoChooser = AutoBuilder.buildAutoChooser();
         SmartDashboard.putData("Auto Chooser", autoChooser);
         
-        // Warm up path generation
+        // Warm up on-the-fly path generation
         CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
 
         configureBindings();
@@ -96,9 +97,9 @@ public class RobotContainer {
         // driveJoystick.rightBumper().whileTrue(drivetrain.applyRequest(() -> brake));
         driveJoystick.R1().whileTrue(drivetrain.applyRequest(() -> brake));
 
-        driveJoystick.triangle().whileTrue(drivetrain.applyRequest(() ->
-            point.withModuleDirection(new Rotation2d(-driveJoystick.getLeftY(), -driveJoystick.getLeftX()))
-        ));
+        // driveJoystick.triangle().whileTrue(drivetrain.applyRequest(() ->
+        //     point.withModuleDirection(new Rotation2d(-driveJoystick.getLeftY(), -driveJoystick.getLeftX()))
+        // ));
 
         // Run SysId routines when holding back/start and X/Y.
         // Note that each routine should be run exactly once in a single log.
@@ -130,8 +131,11 @@ public class RobotContainer {
             new RunIntake(m_intake, Constants.Intake.kIntakeForwardSpeed)
         );
 
+        // driveJoystick.circle().whileTrue(
+        //     new RunIntake(m_intake, Constants.Intake.kIntakeReverseSpeed)
+        // );
         driveJoystick.circle().whileTrue(
-            new RunIntake(m_intake, Constants.Intake.kIntakeReverseSpeed)
+            new DriveToPose(drivetrain, vision)
         );
 
         driveJoystick.povDown().whileTrue(

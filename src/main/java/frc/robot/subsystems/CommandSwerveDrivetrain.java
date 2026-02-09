@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
+import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -15,12 +16,14 @@ import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
@@ -29,6 +32,10 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
+
+import frc.robot.generated.TunerConstants;
+
+import frc.robot.Constants;
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -55,6 +62,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
     private final SwerveRequest.SysIdSwerveSteerGains m_steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
     private final SwerveRequest.SysIdSwerveRotation m_rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
+
+    // set up drive request specifically for driving to a pose
+    private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
+    private double MaxAngularRate = RotationsPerSecond.of(Constants.Swerve.kMaxAngularRps).in(RadiansPerSecond); // max angular velocity
+    private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
+        .withDeadband(MaxSpeed * Constants.Swerve.kDeadbandFraction)
+        .withRotationalDeadband(MaxAngularRate * Constants.Swerve.kDeadbandFraction) // Add a 10% deadband
+        .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
 
     /* SysId routine for characterizing translation. This is used to find PID gains for the drive motors. */
     private final SysIdRoutine m_sysIdRoutineTranslation = new SysIdRoutine(
@@ -342,5 +357,92 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         Matrix<N3, N1> visionMeasurementStdDevs
     ) {
         super.addVisionMeasurement(visionRobotPoseMeters, Utils.fpgaToCurrentTime(timestampSeconds), visionMeasurementStdDevs);
+    }
+
+    private final PIDController poseForwardPidController = new PIDController(1, 0, 0);
+    private final PIDController poseStrafePidController = new PIDController(1, 0, 0);
+    private final PIDController poseRotationPidController = new PIDController(0.1, 0, 0);
+
+    /*
+     * Drives in a straight trajectory from the current pose to a target pose.
+     * 
+     * @param pose The desired pose to drive to
+     */
+    public void driveToPose(Pose2d pose, Vision vision) {
+        Pose2d currentPose = vision.getNetworkPose();
+        Pose2d targetPose = pose;
+
+        double[] diff = {
+            targetPose.getX() - currentPose.getX(),
+            targetPose.getY() - currentPose.getY(),
+            targetPose.getRotation().getRadians() - currentPose.getRotation().getRadians()
+        };
+
+        // Use PIDController.calculate(measurement, setpoint) so the controller
+        // computes (setpoint - measurement) internally. Passing the precomputed
+        // diff into calculate(...) with a setpoint of 0 inverts the sign and
+        // makes reasoning harder.
+        double[] calc = new double[3];
+        calc[0] = poseForwardPidController.calculate(currentPose.getX(), targetPose.getX());
+        calc[1] = poseStrafePidController.calculate(currentPose.getY(), targetPose.getY());
+
+        // Normalize rotation error using Rotation2d.minus to avoid wrap issues.
+        Rotation2d rotError = targetPose.getRotation().minus(currentPose.getRotation());
+        double angleError = rotError.getRadians(); // already normalized to [-pi, pi]
+        // Use controller with measurement=0 and setpoint=angleError so the
+        // controller output is proportional to the angular error.
+        calc[2] = poseRotationPidController.calculate(0.0, angleError);
+
+        // Publish current/target poses for debugging
+        try {
+            SmartDashboard.putNumber("driveToPose_currentX", currentPose.getX());
+            SmartDashboard.putNumber("driveToPose_currentY", currentPose.getY());
+            SmartDashboard.putNumber("driveToPose_currentTheta", currentPose.getRotation().getRadians());
+            SmartDashboard.putNumber("driveToPose_targetX", targetPose.getX());
+            SmartDashboard.putNumber("driveToPose_targetY", targetPose.getY());
+            SmartDashboard.putNumber("driveToPose_targetTheta", targetPose.getRotation().getRadians());
+        } catch (Exception ignore) {}
+
+        // max(lower_bound, min(upper_bound, value))
+        double[] map = {
+            Math.max(-1, Math.min(1, calc[0])),
+            Math.max(-1, Math.min(1, calc[1])),
+            Math.max(-1, Math.min(1, calc[2]))
+        };
+
+        // Apply the computed velocities immediately. Using applyRequest() here
+        // returns a Command that must be scheduled — calling it without
+        // scheduling does nothing. Instead, call setControl(...) directly so
+        // the drivetrain will act on these values when this method is invoked
+        // from a repeating command (e.g. DriveToPose.execute()).
+        //
+        // Scale the normalized [-1, 1] outputs by the drivetrain max speeds
+        // so they are in the same units as teleop joystick inputs and to
+        // exceed the configured deadband where appropriate.
+        double velX = -map[0] * MaxSpeed;
+        // Invert Y sign to match the drivetrain's coordinate convention so a
+        // positive positional error in Y moves the robot toward the target.
+        double velY = -map[1] * MaxSpeed;
+        double rot = -map[2] * MaxAngularRate;
+
+        // Log small debug info to help diagnose alignment behavior.
+        try {
+            String msg = String.format("driveToPose diff=(%.3f, %.3f, %.3f) calc=(%.3f, %.3f, %.3f) vel=(%.3f, %.3f, %.3f)",
+                diff[0], diff[1], diff[2], calc[0], calc[1], calc[2], velX, velY, rot);
+            // DriverStation warning (should appear in DS), plus console and dashboard as fallback
+            // DriverStation.reportWarning(msg, false);
+            System.out.println(msg);
+            SmartDashboard.putNumber("driveToPose_velX", velX);
+            SmartDashboard.putNumber("driveToPose_velY", velY);
+            SmartDashboard.putNumber("driveToPose_rot", rot);
+        } catch (Exception ignore) {
+            // Never crash on logging
+        }
+
+        this.setControl(
+            drive.withVelocityX(velX)
+                .withVelocityY(velY)
+                .withRotationalRate(rot)
+        );
     }
 }
