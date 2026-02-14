@@ -4,6 +4,9 @@
 
 package frc.robot.subsystems;
 
+import java.text.DecimalFormat;
+import java.util.function.DoubleSupplier;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -11,6 +14,8 @@ import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class NetworkTablesIO extends SubsystemBase {
@@ -25,6 +30,8 @@ public class NetworkTablesIO extends SubsystemBase {
   DoubleArraySubscriber poseSubscriber = drivetrainTable.getDoubleArrayTopic("robotPose").subscribe(new double[] {0.0, 0.0, 0.0});
   BooleanSubscriber allianceSubscriber = fmsTable.getBooleanTopic("IsRedAlliance").subscribe(isRedAlliance);
 
+  DecimalFormat oneDP = new DecimalFormat("#.#");
+
   /** Creates a new NetworkTablesIO. */
   public NetworkTablesIO() {}
 
@@ -35,8 +42,10 @@ public class NetworkTablesIO extends SubsystemBase {
     Translation2d translation = new Translation2d(networkPose[0], networkPose[1]);
     Rotation2d rotation = new Rotation2d(networkPose[2] * (Math.PI / 180));
     this.drivetrainPose = new Pose2d(translation, rotation);
-    
     this.isRedAlliance = allianceSubscriber.get();
+    
+    // If the match time is -1, IE, it doesn't exist, replace with 0.
+    SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime() == -1 ? 0 : Double.valueOf(oneDP.format(DriverStation.getMatchTime())));
   }
 
   public Pose2d getNetworkPose() {
@@ -49,5 +58,9 @@ public class NetworkTablesIO extends SubsystemBase {
 
   public boolean getAlliance() {
     return this.isRedAlliance;
+  }
+
+  public double getMatchTime() {
+    return 0.0;
   }
 }

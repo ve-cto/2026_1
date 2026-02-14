@@ -8,14 +8,17 @@ import java.util.Map;
 
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.LEDPattern.GradientType;
 import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import edu.wpi.first.wpilibj2.command.Command;
 
-public class Led extends SubsystemBase{
+public class Led extends SubsystemBase {
     private Timer flashTimer;
     private boolean isFlashing;
     private int flashCount;
@@ -28,7 +31,7 @@ public class Led extends SubsystemBase{
 
     private AddressableLEDBuffer l_ledBuffer;
 
-    private Constants.Led.StatusList Status;
+    private Constants.Led.StatusList Status = Constants.Led.StatusList.DISCONNECT; // set to disconnect at start to avoid nullpointer
 
     // DISCONNECT,
     // DISABLED,
@@ -40,29 +43,28 @@ public class Led extends SubsystemBase{
     // NOTVISIBLE,
     // BLANK
 
-    private LEDPattern robotDisconnectMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.07, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(5));
+    private LEDPattern robotDisconnectMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.1, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(5));
     private LEDPattern robotDisconnectBase = LEDPattern.solid(Color.kDarkRed); 
-    private LEDPattern robotDisconnect = robotDisconnectBase.mask(robotDisconnectMask).atBrightness(Percent.of(20));
+    private LEDPattern robotDisconnect = robotDisconnectBase.mask(robotDisconnectMask).atBrightness(Percent.of(100));
 
-    private LEDPattern robotDisabledMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.3, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(10));
+    private LEDPattern robotDisabledMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.5, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(10));
     private LEDPattern robotDisabledBase = LEDPattern.gradient(GradientType.kContinuous, Color.kOrangeRed, Color.kDarkRed);
-    private LEDPattern robotDisabled = robotDisabledBase.mask(robotDisabledMask).atBrightness(Percent.of(10));
+    private LEDPattern robotDisabled = robotDisabledBase.mask(robotDisabledMask).atBrightness(Percent.of(100));
+
+    private LEDPattern robotEStoppedBase = LEDPattern.gradient(GradientType.kContinuous, Color.kRed, Color.kOrange).atBrightness(Percent.of(100));
+    // private LEDPattern robotEStopped = robotEStoppedBase.breathe(Seconds.of(3)).atBrightness(Percent.of(100));
+    private LEDPattern robotEStopped = robotEStoppedBase.atBrightness(Percent.of(100));
 
     private LEDPattern robotIdleMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.4, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(10));
     private LEDPattern robotIdleBase = LEDPattern.gradient(GradientType.kContinuous, Color.kBlue, Color.kPurple).scrollAtRelativeSpeed(Percent.per(Second).of(20));
-    private LEDPattern robotIdle = robotIdleBase.mask(robotIdleMask).atBrightness(Percent.of(30));
+    private LEDPattern robotIdle = robotIdleBase.mask(robotIdleMask).atBrightness(Percent.of(100));
 
-    private LEDPattern robotAutonomousMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.6, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(50));
+    private LEDPattern robotAutonomousMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.8, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(50));
     private LEDPattern robotAutonomousBase = LEDPattern.rainbow(255, 200).scrollAtRelativeSpeed(Percent.per(Second).of(25));
-    private LEDPattern robotAutonomous = robotAutonomousBase.mask(robotAutonomousMask).atBrightness(Percent.of(50));
+    private LEDPattern robotAutonomous = robotAutonomousBase.mask(robotAutonomousMask).atBrightness(Percent.of(100));
 
-    private LEDPattern robotAligned = LEDPattern.solid(Color.kGreen).atBrightness(Percent.of(70));
-
-    private LEDPattern robotUnaligned = LEDPattern.solid(Color.kYellow).atBrightness(Percent.of(50));
-
-    private LEDPattern robotVisible = LEDPattern.solid(Color.kBlue).atBrightness(Percent.of(50));
-
-    private LEDPattern robotNotVisible = LEDPattern.solid(Color.kPurple).atBrightness(Percent.of(50));
+    private LEDPattern robotAligned = LEDPattern.solid(Color.kGreen).atBrightness(Percent.of(100));
+    private LEDPattern robotUnaligned = LEDPattern.solid(Color.kYellow).atBrightness(Percent.of(100));
 
     private LEDPattern ledBlank = LEDPattern.solid(Color.kBlack);
 
@@ -78,49 +80,44 @@ public class Led extends SubsystemBase{
 
     public void periodic() {
         updateFlashing();
+        try {
+            switch (this.Status) {
+                case DISCONNECT:
+                    robotDisconnect.applyTo(this.l_ledBuffer);
+                    break;
+                case DISABLED:
+                    robotDisabled.applyTo(this.l_ledBuffer);
+                    break;
+                case IDLE:
+                    robotIdle.applyTo(this.l_ledBuffer);
+                    break;
+                case AUTONOMOUS:
+                    robotAutonomous.applyTo(this.l_ledBuffer);
+                    break;
+                case ALIGNED:
+                    robotAligned.applyTo(this.l_ledBuffer);
+                    break;
+                case UNALIGNED:
+                    robotUnaligned.applyTo(this.l_ledBuffer);
+                    break;
+                case ESTOPPED:
+                    robotEStopped.applyTo(this.l_ledBuffer);
+                    break;
+                case BLANK:
+                    ledBlank.applyTo(this.l_ledBuffer);
+                    break;
+            }
+        } catch (NullPointerException e) {}
+
+        l_led.setData(l_ledBuffer);
     }
 
     public Constants.Led.StatusList getStatus() {
         return this.Status;
     }
 
-    public void setAndApplyStatus(Constants.Led.StatusList desiredStatus) {
-        setStatus(desiredStatus);
-    }
-
     public void setStatus(Constants.Led.StatusList desiredStatus) {
         this.Status = desiredStatus;
-        switch (desiredStatus) {
-            case DISCONNECT:
-                robotDisconnect.applyTo(this.l_ledBuffer);
-                break;
-            case DISABLED:
-                robotDisabled.applyTo(this.l_ledBuffer);
-                break;
-            case IDLE:
-                robotIdle.applyTo(this.l_ledBuffer);
-                break;
-            case AUTONOMOUS:
-                robotAutonomous.applyTo(this.l_ledBuffer);
-                break;
-            case ALIGNED:
-                robotAligned.applyTo(this.l_ledBuffer);
-                break;
-            case UNALIGNED:
-                robotUnaligned.applyTo(this.l_ledBuffer);
-                break;
-            case VISIBLE:
-                robotVisible.applyTo(this.l_ledBuffer);
-                break;
-            case NOTVISIBLE:
-                robotNotVisible.applyTo(this.l_ledBuffer);
-                break;
-            case BLANK:
-                ledBlank.applyTo(this.l_ledBuffer);
-                break;
-        }
-
-        l_led.setData(this.l_ledBuffer);
     }
 
     public void startFlashing(Constants.Led.StatusList desiredStatus, int numFlashes, double speed) {
@@ -136,11 +133,11 @@ public class Led extends SubsystemBase{
         //     flashTimer.start();
         //     System.out.println("Started flashing: " + desiredStatus);
         // }
-    
+        System.out.println("Started flashing!");
         // If startFlashing is retriggered, reset.
         isFlashing = true;
         flashCount = 0;
-        totalFlashes = numFlashes;
+        totalFlashes = numFlashes+1;
         flashSpeed = speed;
         flashStatus = desiredStatus;
         ledOn = false;
@@ -152,6 +149,7 @@ public class Led extends SubsystemBase{
     public void updateFlashing() {
         if (isFlashing) {
             if (flashTimer.get() >= flashSpeed) {
+                System.out.println("Timer reset!");
                 flashTimer.reset();
                 ledOn = !ledOn;
 
@@ -164,7 +162,7 @@ public class Led extends SubsystemBase{
 
                 if (flashCount >= totalFlashes) {
                     isFlashing = false;
-                    setStatus(frc.robot.Constants.Led.StatusList.BLANK);
+                    setStatus(flashStatus);
                     // System.out.println("Flashing completed");
                 }
             }
@@ -175,7 +173,43 @@ public class Led extends SubsystemBase{
         return this.isFlashing;
     }
 
-    public void reset() {}
+    public Command displayIdle() {
+        return runOnce(() -> this.setStatus(Constants.Led.StatusList.IDLE));
+    }
+
+    public Command clear() {
+        return runOnce(() -> this.setStatus(Constants.Led.StatusList.BLANK));
+    }
+
+    public Command displayDisconnect() {
+        return runOnce(() -> this.setStatus(Constants.Led.StatusList.DISCONNECT));
+    }
+    
+    public Command displayDisabled() {
+        return runOnce(() -> this.setStatus(Constants.Led.StatusList.DISABLED));
+    }
+
+    public Command display(Constants.Led.StatusList status) {
+        return runOnce(() -> this.setStatus(status));
+    }
+
+    public Command flash(Constants.Led.StatusList status, int numFlashes, double speed) {
+        return runOnce(() -> this.startFlashing(status, numFlashes, speed));
+    }
+
+    /*
+     * Displays either the teleop sequence OR the autonomous sequence depending on which mode is enabled
+     */
+    public Command displayTeleAuto() {
+        return runOnce(() -> {
+            if (DriverStation.isTeleop()) {
+                this.setStatus(Constants.Led.StatusList.IDLE); 
+
+            } else {
+                this.setStatus(Constants.Led.StatusList.AUTONOMOUS);
+            }
+        });
+    }
 }
 
 

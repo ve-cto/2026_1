@@ -4,26 +4,30 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.*;
-
-import org.photonvision.PhotonCamera;
-
+// Swerve
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+import edu.wpi.first.wpilibj.DriverStation;
+// Pathplanner and Poses
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
 import com.pathplanner.lib.path.PointTowardsZone;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import static edu.wpi.first.units.Units.*;
+// Command Setup and Controllers
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
+// Commands
 import frc.robot.Constants;
 import frc.robot.commands.DriveToApriltag;
 import frc.robot.commands.DriveToPose;
@@ -34,11 +38,10 @@ import frc.robot.commands.RetractIntake;
 import frc.robot.commands.RunDebugMotors;
 import frc.robot.commands.RunIntake;
 import frc.robot.commands.UpdatePose;
+// Subsystems
 import frc.robot.subsystems.Intake;
+import frc.robot.subsystems.Led;
 import frc.robot.subsystems.NetworkTablesIO;
-import edu.wpi.first.wpilibj2.command.StartEndCommand;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.DebugMotors;
@@ -59,57 +62,64 @@ public class RobotContainer {
 
     private final Telemetry logger = new Telemetry(MaxSpeed);
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-    public final NetworkTablesIO networkTablesIO = new NetworkTablesIO();
-    public final Vision vision = new Vision(drivetrain, networkTablesIO);
     // #endregion Swerve setup
-
-    // private final CommandXboxController driveJoystick = new CommandXboxController(Constants.Controller.kDriverControllerPort);
-    // private final CommandXboxController operatorJoystick = new CommandXboxController(Constants.Controller.kOperatorControllerPort);
-
-    private final CommandPS4Controller driveJoystick = new CommandPS4Controller(Constants.Controller.kDriverControllerPort);
-    private final CommandPS4Controller operatorJoystick = new CommandPS4Controller(Constants.Controller.kOperatorControllerPort);
     
+    // #region Subsystems
+    public final NetworkTablesIO m_networkTablesIO = new NetworkTablesIO();
+    public final Vision m_vision = new Vision(drivetrain, m_networkTablesIO);
     private final Intake m_intake = new Intake();
     private final DebugMotors m_DebugMotors = new DebugMotors();
+    private final Led m_led = new Led();
+    // #endregion Subsystems
 
+    // #region Controllers
+    // private final CommandXboxController driveJoystick = new CommandXboxController(Constants.Controller.kDriverControllerPort);
+    // private final CommandXboxController operatorJoystick = new CommandXboxController(Constants.Controller.kOperatorControllerPort);
+    private final CommandPS4Controller driveJoystick = new CommandPS4Controller(Constants.Controller.kDriverControllerPort);
+    private final CommandPS4Controller operatorJoystick = new CommandPS4Controller(Constants.Controller.kOperatorControllerPort);
+    // #endregion Controllers
+
+    // #region Misc
     private final SendableChooser<Command> autoChooser;
-
+    // #endregion Misc
+    
     public RobotContainer() {
+        // Create our auto chooser automatically with all of the autos in pathplanner.
         autoChooser = AutoBuilder.buildAutoChooser();
         SmartDashboard.putData("Auto Chooser", autoChooser);
         
         // Warm up on-the-fly path generation
         CommandScheduler.getInstance().schedule(FollowPathCommand.warmupCommand());
 
+        // Bind the commands to the controller inputs.
         configureBindings();
     }
 
     private void configureBindings() {
         // #region Swerve
         drivetrain.setDefaultCommand(
-            // Drivetrain will execute this command periodically
+            // Set default drivetrain command to be driving with joysticks. Unless another command is scheduled (such as PointToHub), this command will run.
             drivetrain.applyRequest(() ->
                 drive.withVelocityX(-driveJoystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
                     .withVelocityY(-driveJoystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
                     .withRotationalRate(-driveJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
-            
         );
-        
-        // Idle while disabled
+        // Idle the drivebase while the robot is disabled.
         final var swerveIdle = new SwerveRequest.Idle();
         RobotModeTriggers.disabled().whileTrue(
             drivetrain.applyRequest(() -> swerveIdle).ignoringDisable(true)
         );
 
-        // Brake while holding right bumper
+        // Brake while holding the button. When the robot brakes, the four drive motors stop and the modules point towards the center of the robot. While breaking, the robot cannot drive.
         // driveJoystick.rightBumper().whileTrue(drivetrain.applyRequest(() -> brake));
         driveJoystick.R1().whileTrue(drivetrain.applyRequest(() -> brake));
-
+        
+        // Point the modules towards the direction of the left stick, without driving the robot. Note that this does not get updated while holding, only on initialize. (They aren't double suppliers)
         // driveJoystick.triangle().whileTrue(drivetrain.applyRequest(() ->
         //     point.withModuleDirection(new Rotation2d(-driveJoystick.getLeftY(), -driveJoystick.getLeftX()))
         // ));
- 
+
         // Run SysId routines when holding back/start and X/Y.
         // Note that each routine should be run exactly once in a single log.
         // driveJoystick.back().and(driveJoystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
@@ -117,17 +127,24 @@ public class RobotContainer {
         // driveJoystick.start().and(driveJoystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
         // driveJoystick.start().and(driveJoystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
-        // reset the field-centric heading on left bumper press
+        // Reset the field-centric heading on button press. Note that this has limited effect during the actual game, as m_vision measurements will override it.
         // driveJoystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
         driveJoystick.L1().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
         // #endregion Swerve
 
-        // While the robot is not disabled (auto, teleop), add vision measurements to pose
-        // RobotModeTriggers.disabled().whileFalse(
-        //     new UpdatePose(vision)
-        // );
+        // #region LEDs
+        m_led.setDefaultCommand(m_led.displayTeleAuto());
+        // RobotModeTriggers only runs when the event happens, NOT while the event is ocurring (runs on entry to disabled but NOT while disabled)
+        // If the robot is ESTOPPED, flash & switch
+        RobotModeTriggers.disabled().and(() -> DriverStation.isDSAttached() && DriverStation.isEStopped()).whileTrue(m_led.flash(Constants.Led.StatusList.ESTOPPED, 5, 0.1).ignoringDisable(true));
+        // If the robot is connected, but disabled
+        RobotModeTriggers.disabled().and(() -> DriverStation.isDSAttached() && !DriverStation.isEStopped()).whileTrue(m_led.displayDisabled().ignoringDisable(true));
+        // If the robot is disconnected
+        RobotModeTriggers.disabled().and(() -> !DriverStation.isDSAttached()).whileTrue(m_led.displayDisconnect().ignoringDisable(true));
+        // #endregion LEDs
 
         // #region Intake
+        // Methods for an imaginary intake - Extending and retracting an arm which the intake is attached to, and running the intake forwards and backwards.
         // driveJoystick.cross().whileTrue(
         //     new RunIntake(m_intake, Constants.Intake.kIntakeForwardSpeed)
         // );
@@ -146,21 +163,39 @@ public class RobotContainer {
         // #endregion Intake
 
         // #region Poses
+        // Methods to drive or point the robot to certain positions on the field.
+
         // driveJoystick.circle().whileTrue(
-        //     new DriveToApriltag(5, drivetrain, vision)
+        //     new DriveToApriltag(5, drivetrain, m_vision)
         // );
+        
+        // Points the robot towards the pose of the hub corresponding to the robots alliance.
         // driveJoystick.cross().whileTrue(
         //     // Blue hub (4.65, 4)
         //     // Red hub (12, 4)
-        //     new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, networkTablesIO) 
+        //     new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO) 
         // );
 
         // driveJoystick.square().whileTrue(
-        //     new DriveToPose(new Pose2d(2.0, 2.0, new Rotation2d()), drivetrain, networkTablesIO)
+        //     new DriveToPose(new Pose2d(2.0, 2.0, new Rotation2d()), drivetrain, m_networkTablesIO)
         // );
         // #endregion Poses
         
+        // #region Vision
+        // While the robot is not disabled (auto, teleop), add m_vision measurements to pose.
+        // TODO: Add a small delay to this so that the m_vision subsystem isn't constantly flooded with requests.
+        // RobotModeTriggers.disabled().whileFalse(
+        //     new UpdatePose(m_vision)
+        // );
+        // #endregion Vision
+
         // #region DebugMotors
+        // Manually shift motors forwards and backwards at half speed. Note that only one motor can be in motion at a time.
+        // motorID 1 = CAN ID 15
+        // motorID 2 = CAN ID 16
+        // motorID 3 = CAN ID 17
+        // motorID 4 = CAN ID 18
+        
         driveJoystick.povUp().and(driveJoystick.L1().negate()).whileTrue(new RunDebugMotors(1, 0.5, m_DebugMotors));
         driveJoystick.povRight().and(driveJoystick.L1().negate()).whileTrue(new RunDebugMotors(2, 0.5, m_DebugMotors));
         driveJoystick.povDown().and(driveJoystick.L1().negate()).whileTrue(new RunDebugMotors(3, 0.5, m_DebugMotors));
@@ -172,12 +207,12 @@ public class RobotContainer {
         driveJoystick.povLeft().and(driveJoystick.L1()).whileTrue(new RunDebugMotors(4, -0.5, m_DebugMotors));
         // #endregion DebugMotors
         
+        // Update the robot's odometry. Unsure if this needs to be at the end or not, but it makes sense if it is.
         drivetrain.registerTelemetry(logger::telemeterize);
     }
     
-
     public Command getAutonomousCommand() {
-        // Return the auto selected by the chooser
+        // Return the auto selected by the chooser on SmartDashboard
         return autoChooser.getSelected();
     }
 }
