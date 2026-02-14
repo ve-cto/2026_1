@@ -29,15 +29,15 @@ import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 // Commands
 import frc.robot.Constants;
-import frc.robot.commands.DriveToApriltag;
-import frc.robot.commands.DriveToPose;
 import frc.robot.commands.ExtendIntake;
-import frc.robot.commands.PointToHub;
-import frc.robot.commands.PointToPose;
 import frc.robot.commands.RetractIntake;
 import frc.robot.commands.RunDebugMotors;
 import frc.robot.commands.RunIntake;
-import frc.robot.commands.UpdatePose;
+import frc.robot.commands.drive.DriveToApriltag;
+import frc.robot.commands.drive.DriveToPose;
+import frc.robot.commands.drive.PointToHub;
+import frc.robot.commands.drive.PointToPose;
+import frc.robot.commands.drive.UpdatePose;
 // Subsystems
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Led;
@@ -170,15 +170,15 @@ public class RobotContainer {
         // );
         
         // Points the robot towards the pose of the hub corresponding to the robots alliance.
-        // driveJoystick.cross().whileTrue(
-        //     // Blue hub (4.65, 4)
-        //     // Red hub (12, 4)
-        //     new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO) 
-        // );
+        driveJoystick.cross().whileTrue(
+            // Blue hub (4.65, 4)
+            // Red hub (12, 4)
+            new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO) 
+        );
 
-        // driveJoystick.square().whileTrue(
-        //     new DriveToPose(new Pose2d(2.0, 2.0, new Rotation2d()), drivetrain, m_networkTablesIO)
-        // );
+        driveJoystick.square().whileTrue(
+            new DriveToPose(new Pose2d(2.0, 2.0, new Rotation2d()), drivetrain, m_networkTablesIO)
+        );
         // #endregion Poses
         
         // #region Vision

@@ -1,18 +1,24 @@
-package frc.robot.commands;
+package frc.robot.commands.drive;
+
+import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.NetworkTablesIO;
 
-public class DriveToPose extends Command {
+public class PointToPose extends Command {
     private final CommandSwerveDrivetrain m_drivetrain;
     private Pose2d m_targetPose;
     private final NetworkTablesIO m_networkTablesIO;
+    private final DoubleSupplier m_velX;
+    private final DoubleSupplier m_velY;
 
-    public DriveToPose(Pose2d targetPose, CommandSwerveDrivetrain drivetrain, NetworkTablesIO networkTablesIO) {
+    public PointToPose(Pose2d targetPose, DoubleSupplier velX, DoubleSupplier velY, CommandSwerveDrivetrain drivetrain, NetworkTablesIO networkTablesIO) {
         this.m_drivetrain = drivetrain;
         this.m_targetPose = targetPose;
+        this.m_velX = velX;
+        this.m_velY = velY;
         this.m_networkTablesIO = networkTablesIO;
         addRequirements(drivetrain);
     }   
@@ -23,7 +29,7 @@ public class DriveToPose extends Command {
 
     @Override
     public void execute() {
-        m_drivetrain.driveToPose(m_targetPose, m_networkTablesIO);
+        m_drivetrain.pointToPose(m_targetPose, m_velX.getAsDouble(), m_velY.getAsDouble(), m_networkTablesIO);
     }
 
     @Override

@@ -36,6 +36,7 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.generated.TunerConstants;
 
 import frc.robot.Constants;
+import frc.robot.commands.drive.PointToPose;
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -362,7 +363,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private final PIDController poseForwardPidController = new PIDController(1, 0, 0);
     private final PIDController poseStrafePidController = new PIDController(1, 0, 0);
     private final PIDController poseRotationPidController = new PIDController(0.1, 0, 0);
-    private final PIDController pointRotationPidController = new PIDController(0.5, 0, 0);
+    private final PIDController pointRotationPidController = new PIDController(1.5, 0, 0);
 
     /*
      * Drives in a straight trajectory from the current pose to a target pose.
@@ -373,82 +374,25 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         Pose2d currentPose = table.getNetworkPose();
         Pose2d targetPose = pose;
 
-        double[] diff = {
-            targetPose.getX() - currentPose.getX(),
-            targetPose.getY() - currentPose.getY(),
-            targetPose.getRotation().getRadians() - currentPose.getRotation().getRadians()
-        };
-
-        // Use PIDController.calculate(measurement, setpoint) so the controller
-        // computes (setpoint - measurement) internally. Passing the precomputed
-        // diff into calculate(...) with a setpoint of 0 inverts the sign and
-        // makes reasoning harder.
-        double[] calc = new double[3];
+        double[] calc = new double[2];
         calc[0] = poseForwardPidController.calculate(currentPose.getX(), targetPose.getX());
         calc[1] = poseStrafePidController.calculate(currentPose.getY(), targetPose.getY());
-
-        // Normalize rotation error using Rotation2d.minus to avoid wrap issues.
-        Rotation2d rotError = targetPose.getRotation().minus(currentPose.getRotation());
-        double angleError = rotError.getRadians(); // already normalized to [-pi, pi]
-        // Use controller with measurement=0 and setpoint=angleError so the
-        // controller output is proportional to the angular error.
-        calc[2] = poseRotationPidController.calculate(0.0, angleError);
-
-        // Publish current/target poses for debugging
-        try {
-            SmartDashboard.putNumber("driveToPose_currentX", currentPose.getX());
-            SmartDashboard.putNumber("driveToPose_currentY", currentPose.getY());
-            SmartDashboard.putNumber("driveToPose_currentTheta", currentPose.getRotation().getRadians());
-            SmartDashboard.putNumber("driveToPose_targetX", targetPose.getX());
-            SmartDashboard.putNumber("driveToPose_targetY", targetPose.getY());
-            SmartDashboard.putNumber("driveToPose_targetTheta", targetPose.getRotation().getRadians());
-        } catch (Exception ignore) {}
 
         // max(lower_bound, min(upper_bound, value))
         double[] map = {
             Math.max(-1, Math.min(1, calc[0])),
             Math.max(-1, Math.min(1, calc[1])),
-            Math.max(-1, Math.min(1, calc[2]))
         };
 
-        // Apply the computed velocities immediately. Using applyRequest() here
-        // returns a Command that must be scheduled — calling it without
-        // scheduling does nothing. Instead, call setControl(...) directly so
-        // the drivetrain will act on these values when this method is invoked
-        // from a repeating command (e.g. DriveToPose.execute()).
-        //
-        // Scale the normalized [-1, 1] outputs by the drivetrain max speeds
-        // so they are in the same units as teleop joystick inputs and to
-        // exceed the configured deadband where appropriate.
-
         // If we're on blue we need to flip these.
-        if (DriverStation.getAlliance().orElse(Alliance.Red) == Alliance.Blue) {
-            map[0] = -map[0];
-            map[1] = -map[1];
-        }
+        // if (DriverStation.getAlliance().orElse(Alliance.Red) == Alliance.Blue) {
+        //     map[0] = -map[0];
+        //     map[1] = -map[1];
+        // }
         double velX = -map[0] * MaxSpeed;
         double velY = -map[1] * MaxSpeed;
-        double rot = -map[2] * MaxAngularRate;
 
-        // Log small debug info to help diagnose alignment behavior.
-        try {
-            // String msg = String.format("driveToPose diff=(%.3f, %.3f, %.3f) calc=(%.3f, %.3f, %.3f) vel=(%.3f, %.3f, %.3f)",
-                // diff[0], diff[1], diff[2], calc[0], calc[1], calc[2], velX, velY, rot);
-            // DriverStation warning (should appear in DS), plus console and dashboard as fallback
-            // DriverStation.reportWarning(msg, false);
-            // System.out.println(msg);
-            SmartDashboard.putNumber("driveToPose_velX", velX);
-            SmartDashboard.putNumber("driveToPose_velY", velY);
-            SmartDashboard.putNumber("driveToPose_rot", rot);
-        } catch (Exception ignore) {
-            // Never crash on logging
-        }
-
-        this.setControl(
-            drive.withVelocityX(velX)
-                .withVelocityY(velY)
-                .withRotationalRate(rot)
-        );
+        pointToPose(pose, velX, velY, table);
     }
 
     public void pointToPose(Pose2d pose, double velX, double velY, NetworkTablesIO table) {
@@ -464,17 +408,21 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         double targetXRelative = targetX - currentX;
         double targetYRelative = targetY - currentY;
 
-        double theta = Math.atan2(targetYRelative, targetXRelative) + Math.PI;
+        double theta = Math.atan2(targetYRelative, targetXRelative);
         Rotation2d targetRotation2d = new Rotation2d(theta);
+        SmartDashboard.putNumber("Theta", theta);
 
         // Rotation2d targetRotation2d = Math.sqrt(targetPose.getX() * targetPose.getX() + targetPose.getY() * targetPose.getY()) > 0.01 ? new Rotation2d(targetPose.getY(), targetPose.getX()) : currentPose.getRotation();
     
-        Rotation2d rotError = targetRotation2d.minus(currentPose.getRotation());
+        // Rotation2d rotError = targetRotation2d.minus(currentPose.getRotation());
+        Rotation2d rotError = currentPose.getRotation().minus(targetRotation2d);
         double angleError = rotError.getRadians();
+        SmartDashboard.putNumber("Angle Error", angleError);
 
         double calc = pointRotationPidController.calculate(0.0, angleError);
+        SmartDashboard.putNumber("Calculated Output", calc);
 
-        double minmax = Math.max(-1, Math.min(1, calc));
+        double minmax = Math.max(-0.8, Math.min(0.8, calc));
 
         double rot = -minmax * MaxAngularRate;
 
