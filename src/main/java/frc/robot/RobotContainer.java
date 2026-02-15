@@ -173,7 +173,8 @@ public class RobotContainer {
         driveJoystick.cross().whileTrue(
             // Blue hub (4.65, 4)
             // Red hub (12, 4)
-            new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO) 
+            new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO)
+                .alongWith(m_led.displayTargeted(() -> drivetrain.getAligned()))
         );
 
         driveJoystick.square().whileTrue(

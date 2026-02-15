@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
@@ -12,6 +13,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.LEDPattern.GradientType;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -173,12 +175,20 @@ public class Led extends SubsystemBase {
         return this.isFlashing;
     }
 
-    public Command displayIdle() {
-        return runOnce(() -> this.setStatus(Constants.Led.StatusList.IDLE));
-    }
-
     public Command clear() {
         return runOnce(() -> this.setStatus(Constants.Led.StatusList.BLANK));
+    }
+
+    public Command display(Constants.Led.StatusList status) {
+        return runOnce(() -> this.setStatus(status));
+    }
+
+    public Command flash(Constants.Led.StatusList status, int numFlashes, double speed) {
+        return runOnce(() -> this.startFlashing(status, numFlashes, speed));
+    }
+
+    public Command displayIdle() {
+        return runOnce(() -> this.setStatus(Constants.Led.StatusList.IDLE));
     }
 
     public Command displayDisconnect() {
@@ -189,12 +199,14 @@ public class Led extends SubsystemBase {
         return runOnce(() -> this.setStatus(Constants.Led.StatusList.DISABLED));
     }
 
-    public Command display(Constants.Led.StatusList status) {
-        return runOnce(() -> this.setStatus(status));
-    }
-
-    public Command flash(Constants.Led.StatusList status, int numFlashes, double speed) {
-        return runOnce(() -> this.startFlashing(status, numFlashes, speed));
+    public Command displayTargeted(BooleanSupplier b) {
+        return run(() -> {
+            if (b.getAsBoolean()) {
+                this.setStatus(Constants.Led.StatusList.ALIGNED);
+            } else {
+                this.setStatus(Constants.Led.StatusList.UNALIGNED);
+            }
+        });
     }
 
     /*

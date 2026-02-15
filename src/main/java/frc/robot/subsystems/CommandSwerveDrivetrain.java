@@ -2,6 +2,7 @@ package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.*;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.SignalLogger;
@@ -389,11 +390,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         //     map[0] = -map[0];
         //     map[1] = -map[1];
         // }
-        double velX = -map[0] * MaxSpeed;
-        double velY = -map[1] * MaxSpeed;
+        double velX = map[0] * MaxSpeed;
+        double velY = map[1] * MaxSpeed;
 
         pointToPose(pose, velX, velY, table);
     }
+
+
+    private double angleError = 0.0;
 
     public void pointToPose(Pose2d pose, double velX, double velY, NetworkTablesIO table) {
         Pose2d currentPose = table.getNetworkPose();
@@ -416,8 +420,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     
         // Rotation2d rotError = targetRotation2d.minus(currentPose.getRotation());
         Rotation2d rotError = currentPose.getRotation().minus(targetRotation2d);
-        double angleError = rotError.getRadians();
-        SmartDashboard.putNumber("Angle Error", angleError);
+        this.angleError = rotError.getRadians();
+        SmartDashboard.putNumber("Angle Error", this.angleError);
 
         double calc = pointRotationPidController.calculate(0.0, angleError);
         SmartDashboard.putNumber("Calculated Output", calc);
@@ -431,5 +435,17 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 .withVelocityY(velY)
                 .withRotationalRate(rot)
         );
+    }
+
+    public double getPointOffset() {
+        double x = this.angleError;
+        return x;
+    }
+
+    public boolean getAligned() {
+        double x = getPointOffset();
+        // System.out.println(x);
+        boolean a = Math.abs(getPointOffset()) <= 0.35;
+        return a;
     }
 }
