@@ -21,11 +21,9 @@ import static edu.wpi.first.units.Units.*;
 // Command Setup and Controllers
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
-import edu.wpi.first.wpilibj2.command.StartEndCommand;
 // Commands
 import frc.robot.commands.drive.DriveToApriltag;
 import frc.robot.commands.drive.DriveToPose;
@@ -136,15 +134,10 @@ public class RobotContainer {
         // #endregion Swerve
 
         // #region LEDs
-        // If nothing else is happening - subsystem gets current mode (auto or teleop) and applies based on that
-        m_led.setDefaultCommand(m_led.displayTeleAuto());
-        // RobotModeTriggers only runs when the event happens, NOT while the event is ocurring (eg: runs on entry to disabled but NOT while disabled)
+        // Default to displaying the specific modes' pattern (disconn, disabl, auto, teleop)
+        m_led.setDefaultCommand(m_led.handleDefault().ignoringDisable(true));
         // If the robot is ESTOPPED, flash
         RobotModeTriggers.disabled().and(() -> DriverStation.isDSAttached() && DriverStation.isEStopped()).whileTrue(m_led.flash(Constants.Led.StatusList.ESTOPPED, 5, 0.1).ignoringDisable(true));
-        // If the robot is connected to the DS, but disabled
-        RobotModeTriggers.disabled().and(() -> DriverStation.isDSAttached() && !DriverStation.isEStopped()).whileTrue(m_led.display(Constants.Led.StatusList.DISABLED).ignoringDisable(true));
-        // If the robot is disconnected from the DS
-        RobotModeTriggers.disabled().and(() -> !DriverStation.isDSAttached()).whileTrue(m_led.display(Constants.Led.StatusList.DISCONNECT).ignoringDisable(true));
         // #endregion LEDs
 
         // #region Intake

@@ -236,6 +236,23 @@ public class Led extends SubsystemBase {
             }
         });
     }
+
+    public Command handleDefault() {
+        return runOnce(() -> {
+            // Skip this if we are EStopped.
+            if (DriverStation.isEStopped()) {
+                return;
+            } else {
+                if (!DriverStation.isDSAttached()) {
+                    this.setStatus(Constants.Led.StatusList.DISCONNECT);
+                } else if (DriverStation.isDisabled()) {
+                    this.setStatus(Constants.Led.StatusList.DISABLED);
+                } else if (DriverStation.isAutonomousEnabled()) {
+                    this.setStatus(Constants.Led.StatusList.AUTONOMOUS);
+                } else if (DriverStation.isTeleopEnabled()) {
+                    this.setStatus(Constants.Led.StatusList.IDLE);
+                }
+            }
+        }).ignoringDisable(true);
+    }
 }
-
-
