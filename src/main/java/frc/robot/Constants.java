@@ -11,6 +11,9 @@ public final class Constants {
         // Swerve takes up the CAN network up to value 12, thus, all motors must be assigned ID's of 13 or higher.
         public static final int kIntakerId = 99; // ludicrously high value as we aren't using this subsystem yet
         public static final int kArmId = 99;
+        public static final int kShooterId = 99;
+        public static final int kLoaderId = 99;
+        
         public static final int kArmEncoderAChannel = 2;
         public static final int kArmEncoderBChannel = 3;
     

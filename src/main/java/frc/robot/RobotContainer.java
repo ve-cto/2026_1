@@ -55,12 +55,11 @@ public class RobotContainer {
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
     private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
     private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
-
     private final Telemetry logger = new Telemetry(MaxSpeed);
-    public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
     // #endregion Swerve setup
     
     // #region Subsystems
+    public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
     public final NetworkTablesIO m_networkTablesIO = new NetworkTablesIO();
     public final Vision m_vision = new Vision(drivetrain, m_networkTablesIO);
     private final Intake m_intake = new Intake();
@@ -106,13 +105,14 @@ public class RobotContainer {
                     .withRotationalRate(-driveJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
         );
-        // Idle the drivebase while the robot is disabled.
+
+        // Make the drivetrain idle when robot is disabled. (note that this is called only once)
         final var swerveIdle = new SwerveRequest.Idle();
         RobotModeTriggers.disabled().whileTrue(
             drivetrain.applyRequest(() -> swerveIdle).ignoringDisable(true)
         );
 
-        // Brake while holding the button. When the robot brakes, the four drive motors stop and the modules point towards the center of the robot. While breaking, the robot cannot drive.
+        // Brake while holding. When the robot brakes, the four drive motors stop and the modules point towards the center of the robot. While breaking, the robot cannot drive.
         // driveJoystick.rightBumper().whileTrue(drivetrain.applyRequest(() -> brake));
         // driveJoystick.R1().whileTrue(drivetrain.applyRequest(() -> brake));
         
@@ -158,6 +158,10 @@ public class RobotContainer {
         //     new RetractIntake(m_intake)
         // );
         // #endregion Intake
+
+        // #region Shooter
+
+        // #endregion Shooter
 
         // #region Poses
         // Methods to drive or point the robot to certain positions on the field.

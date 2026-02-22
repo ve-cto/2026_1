@@ -66,8 +66,6 @@ public class Vision extends SubsystemBase {
     private double m_lastVisionSimUpdate = 0.0;
     private static final double kVisionSimMinDt = 0.05; // 50ms
 
-    double[] networkPose = {0.0, 0.0, 0.0};
-    double[] diff = networkPose;
     Pose2d drivetrainPose = new Pose2d();
 
     /*
@@ -99,33 +97,8 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
-        //  implement later
-
-        // var resultAlpha = cameraAlpha.getLatestResult();
-        // // var resultBeta = cameraBeta.getLatestResult();
-    
-        // boolean targetVisibleAlpha = resultAlpha.hasTargets();
-        // // boolean targetVisibleBeta = resultBeta.hasTargets();
-    
-        // int targetIDBestAlpha = targetVisibleAlpha ? resultAlpha.getBestTarget().getFiducialId() : null;
-        // int targetIDBestBeta = targetVisibleBeta ? resultBeta.getBestTarget().getFiducialId() : null;
-
-        // if (targetIDAlpha != -1) {
-        //     if (Arrays.asList(hubTagsRed).contains(targetIDAlpha)) {
-        //         // System.out.println("Target is in Red Hub Tags");
-
-        //     } else if (Arrays.asList(hubTagsBlue).contains(targetIDAlpha)) {
-        //         // System.out.println("Target is in Blue Hub Tags");
-            
-        //     }
-        // }
-        this.networkPose = m_networkTablesIO.getNetworkPoseArray();
         this.drivetrainPose = m_networkTablesIO.getNetworkPose();
     }   
-
-    public Pose2d getNetworkPose() {
-        return this.drivetrainPose;
-    }
 
     /*
      * 
@@ -237,7 +210,6 @@ public class Vision extends SubsystemBase {
         }
 
         visionSim.update(this.drivetrainPose);
-        this.diff = this.networkPose;
         m_lastVisionSimUpdate = now;
     }
 }
