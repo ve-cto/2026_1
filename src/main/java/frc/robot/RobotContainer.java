@@ -140,7 +140,7 @@ public class RobotContainer {
         // Default to displaying the specific modes' pattern (disconn, disabl, auto, teleop)
         m_led.setDefaultCommand(m_led.handleDefault().ignoringDisable(true));
         // If the robot is ESTOPPED, flash
-        RobotModeTriggers.disabled().and(() -> DriverStation.isEStopped()).whileTrue(m_led.flash(Constants.Led.StatusList.ESTOPPED, 5, 0.1).ignoringDisable(true));
+        RobotModeTriggers.disabled().and(() -> DriverStation.isEStopped()).whileTrue(m_led.estop().ignoringDisable(true));
         // #endregion LEDs
 
         // #region Intake
