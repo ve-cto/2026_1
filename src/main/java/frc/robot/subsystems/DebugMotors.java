@@ -5,6 +5,8 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -13,16 +15,20 @@ public class DebugMotors extends SubsystemBase {
   private final WPI_VictorSPX m_motor1;
   private final WPI_VictorSPX m_motor2;
   private final WPI_VictorSPX m_motor3;
-  private final WPI_VictorSPX m_motor4;
-  private final WPI_VictorSPX m_motor5;
+  private final TalonFX m_motor4;
+  private final TalonFX m_motor5;
+  // private final TalonFXConfiguration m_motor5Config;
 
   /** Creates a new DebugMotors. */
   public DebugMotors() {
     m_motor1 = new WPI_VictorSPX(Constants.Hardware.kDebugMotor1);
     m_motor2 = new WPI_VictorSPX(Constants.Hardware.kDebugMotor2);
     m_motor3 = new WPI_VictorSPX(Constants.Hardware.kDebugMotor3);
-    m_motor4 = new WPI_VictorSPX(Constants.Hardware.kDebugMotor4);
-    m_motor5 = new WPI_VictorSPX(Constants.Hardware.kDebugMotor5);
+    m_motor4 = new TalonFX(Constants.Hardware.kDebugMotor4);
+    m_motor5 = new TalonFX(Constants.Hardware.kDebugMotor5);
+
+    // m_motor5Config = new TalonFXConfiguration();
+
   }
 
   @Override

@@ -70,7 +70,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private double MaxAngularRate = RotationsPerSecond.of(Constants.Swerve.kMaxAngularRps).in(RadiansPerSecond); // max angular velocity
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
         .withDeadband(MaxSpeed * Constants.Swerve.kDeadbandFraction)
-        .withRotationalDeadband(MaxAngularRate * Constants.Swerve.kDeadbandFraction) // Add a 10% deadband
+        .withRotationalDeadband(MaxAngularRate * Constants.Swerve.kDeadbandFraction) // Add a `% deadband
         .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
 
     /* SysId routine for characterizing translation. This is used to find PID gains for the drive motors. */

@@ -22,7 +22,7 @@ public class RunDebugMotors extends Command {
     this.speeds = speed;
     this.motorID = motorID;
     // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(this.m_DebugMotors);
+    // addRequirements(this.m_DebugMotors);
   }
 
   // Called when the command is initially scheduled.
