@@ -31,6 +31,7 @@ import frc.robot.commands.drive.PointToHub;
 import frc.robot.commands.drive.PointToPose;
 import frc.robot.commands.RunDebugMotors;
 import frc.robot.commands.drive.UpdatePose;
+import frc.robot.commands.drive.PointToAllianceFuel;
 // Subsystems
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Led;
@@ -150,9 +151,9 @@ public class RobotContainer {
 
         // #region Intake
         // Methods for an imaginary intake - Extending and retracting an arm which the intake is attached to, and running the intake forwards and backwards.
-        driveJoystick.a().whileTrue(
-            m_intake.runIntakeCommand()
-        );
+        // driveJoystick.a().whileTrue(
+        //     m_intake.runIntakeCommand()
+        // );
 
         driveJoystick.povDown().whileTrue(
             m_intake.extendIntakeCommand()
@@ -192,6 +193,10 @@ public class RobotContainer {
         // RobotModeTriggers.disabled().whileFalse(
         //     new UpdatePose(m_vision)
         // );
+
+        driveJoystick.a().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
+            new PointToAllianceFuel(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO)
+        );
         // #endregion Vision
 
         // #region DebugMotors
