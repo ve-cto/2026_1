@@ -10,10 +10,10 @@ public final class Constants {
     public static final class Hardware {
         // Swerve takes up the CAN network up to value 12, thus, all motors must be assigned ID's of 13 or higher.
         public static final int kIntakeId = 17;
-        public static final int kArmId = 20; // ludicrously high value as we aren't using this subsystem yet
+        public static final int kArmId = 20;
         public static final int kShooterLId = 19;
         public static final int kShooterRId = 18;
-        public static final int kLoaderId = 99;
+        public static final int kLoaderId = 21;
         
         public static final int kArmEncoderAChannel = 2;
         public static final int kArmEncoderBChannel = 3;
@@ -64,7 +64,7 @@ public final class Constants {
             DISABLED,
             TELEOP,           
             AUTONOMOUS,
-            ALIGNED,        // Aligned to the hub? / Ready to shoot?
+            ALIGNED,        // Aligned to the hub?
             UNALIGNED,
             ESTOPPED,
             BLANK
@@ -72,9 +72,26 @@ public final class Constants {
     }
 
     public static class Shooter {
-        public static final double controlRatio = 4; // Every 4 rotations of the motor, one rotation of the mechanism
-        public static final double maxOutput = 0.95; // Limit the maximum percentage output applied to the shooter motors to avoid overdraw
+        public static final double kControlRatio = 4; // Every 4 rotations of the motor, one rotation of the mechanism
+        public static final double kMaxOutput = 0.95; // Limit the maximum percentage output applied to the shooter motors to avoid overdraw
+    }
+
+    public static class Loader {
+        public static final double kLoadSpeed = 0.8;
     }
     
+    public static class DS {
+        public static enum GameState {
+            NONE,
+            AUTONOMOUS,
+            TRANSITION,
+            SHIFT1,
+            SHIFT2,
+            SHIFT3,
+            SHIFT4,
+            ENDGAME
+        } 
+    }
+
     private Constants() {}
 }

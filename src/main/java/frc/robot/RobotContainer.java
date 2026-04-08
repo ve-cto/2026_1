@@ -40,6 +40,7 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.DebugMotors;
 import frc.robot.subsystems.Vision;
+import frc.robot.subsystems.Feeder;
 
 public class RobotContainer {
     // #region Swerve setup
@@ -50,7 +51,13 @@ public class RobotContainer {
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
         .withDeadband(MaxSpeed * Constants.Swerve.kDeadbandFraction)
         .withRotationalDeadband(MaxAngularRate * Constants.Swerve.kDeadbandFraction) // Add a 10% deadband
-            .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
+        .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
+
+    private final SwerveRequest.RobotCentric driveRobotCentric = new SwerveRequest.RobotCentric()
+        .withDeadband(MaxSpeed * Constants.Swerve.kDeadbandFraction)
+        .withRotationalDeadband(MaxAngularRate * Constants.Swerve.kDeadbandFraction) // Add a `% deadband
+        .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
+
     private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
     private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
     private final Telemetry logger = new Telemetry(MaxSpeed);
@@ -64,6 +71,7 @@ public class RobotContainer {
     private final DebugMotors m_DebugMotors = new DebugMotors();
     private final Led m_led = new Led();
     private final Shooter m_shooter = new Shooter();
+    private final Feeder m_feeder = new Feeder();
     // #endregion Subsystems
 
     // #region Controllers
@@ -78,7 +86,8 @@ public class RobotContainer {
     // #endregion Misc
     
     public RobotContainer() {
-        // Create our auto chooser automatically with all of the autos from pathplanner.
+        // Create our auto chooser
+        // Pathplanner autos get populated into it automatically
         autoChooser = AutoBuilder.buildAutoChooser();
         SmartDashboard.putData("Auto Chooser", autoChooser);
         
@@ -92,6 +101,7 @@ public class RobotContainer {
         NamedCommands.registerCommand("RunShooter500", m_shooter.runRPMCommand(500));
         NamedCommands.registerCommand("RunShooter600", m_shooter.runRPMCommand(600));
         NamedCommands.registerCommand("RunShooter700", m_shooter.runRPMCommand(700));
+        NamedCommands.registerCommand("Feed", m_feeder.feedCommand());
 
         // Bind the commands to the controller inputs.
         configureBindings();
@@ -108,16 +118,26 @@ public class RobotContainer {
             )
         );
 
+        // Drive robot-centric instead of field-centric while held.
+        // driveJoystick.leftBumper().whileTrue(
+        //     drivetrain.applyRequest(() ->
+        //         driveRobotCentric.withVelocityX(-driveJoystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+        //             .withVelocityY(-driveJoystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+        //             .withRotationalRate(-driveJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+        //     )
+        // );
+
         // Make the drivetrain idle when robot is disabled. (note that this is called only once)
         final var swerveIdle = new SwerveRequest.Idle();
         RobotModeTriggers.disabled().whileTrue(
             drivetrain.applyRequest(() -> swerveIdle).ignoringDisable(true)
         );
+        // Disable the drivetrain while in test mode to avoid noisy motors
         RobotModeTriggers.test().whileTrue(
             drivetrain.applyRequest(() -> swerveIdle).ignoringDisable(true)
         );
 
-        // Brake while holding. When the robot brakes, the four drive motors stop and the modules point towards the center of the robot. While breaking, the robot cannot drive.
+        // Brake while holding. When the robot brakes, the four drive motors stop and the modules point towards the center of the robot.
         // driveJoystick.rightBumper().whileTrue(drivetrain.applyRequest(() -> brake));
         // driveJoystick.R1().whileTrue(drivetrain.applyRequest(() -> brake));
         
@@ -149,26 +169,31 @@ public class RobotContainer {
         // #endregion LEDs
 
         // #region Intake
-        // Methods for an imaginary intake - Extending and retracting an arm which the intake is attached to, and running the intake forwards and backwards.
-        // driveJoystick.a().whileTrue(
-        //     m_intake.runIntakeCommand()
+        driveJoystick.a().whileTrue(
+            m_intake.runIntakeCommand()
+        );
+
+        // driveJoystick.povDown().whileTrue(
+        //     m_intake.extendIntakeCommand()
         // );
 
-        driveJoystick.povDown().whileTrue(
-            m_intake.extendIntakeCommand()
-        );
-
-        driveJoystick.povUp().whileTrue(
-            m_intake.retractIntakeCommand()
-        );
+        // driveJoystick.povUp().whileTrue(
+        //     m_intake.retractIntakeCommand()
+        // );
         // #endregion Intake
         
         // #region Shooter
         // Run our shooter at a given rpm.
         // Set negative to run backwards.
-        driveJoystick.x().whileTrue(m_shooter.runRPMCommand(500));
+        m_shooter.setDefaultCommand(
+            m_shooter.runRPMCommand(500)
+        );
+
         driveJoystick.y().whileTrue(m_shooter.runRPMCommand(600));
         driveJoystick.b().whileTrue(m_shooter.runRPMCommand(700));
+
+        driveJoystick.x().whileTrue(m_shooter.runRPMCommand(700));
+        driveJoystick.x().and(() -> m_shooter.isAtSetpoint()).whileTrue(m_feeder.feedCommand());
         // #endregion Shooter
 
         // #region Vision
@@ -192,9 +217,9 @@ public class RobotContainer {
         //     m_vision.addVisionMeasurementCommand()
         // );
 
-        driveJoystick.a().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
-            new PointToAllianceFuel(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO).alongWith(m_shooter.runRPMCommand(800))
-        );
+        // driveJoystick.a().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
+        //     new PointToAllianceFuel(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO).alongWith(m_shooter.runRPMCommand(800))
+        // );
         // #endregion Vision
 
         // #region DebugMotors

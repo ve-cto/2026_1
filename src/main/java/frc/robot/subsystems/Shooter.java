@@ -37,6 +37,7 @@ public class Shooter extends SubsystemBase {
   private double shooterRRPM;
   private double shooterVelocityAv;
   private double closedLoopCalculatedOutput;
+  private double setpoint = 0;
 
   /** Creates a new Shooter. */
   public Shooter() {
@@ -56,10 +57,13 @@ public class Shooter extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    this.shooterLRPM = (m_shooterL.getRotorVelocity().getValue().in(RotationsPerSecond) * 60) / Constants.Shooter.controlRatio;
-    this.shooterRRPM = (m_shooterR.getRotorVelocity().getValue().in(RotationsPerSecond) * 60) / Constants.Shooter.controlRatio;
+    this.shooterLRPM = (m_shooterL.getRotorVelocity().getValue().in(RotationsPerSecond) * 60) / Constants.Shooter.kControlRatio;
+    this.shooterRRPM = (m_shooterR.getRotorVelocity().getValue().in(RotationsPerSecond) * 60) / Constants.Shooter.kControlRatio;
     
     this.shooterVelocityAv = (this.shooterLRPM + -this.shooterRRPM) / 2;
+
+    SmartDashboard.putBoolean("isAtSetpoint", isAtSetpoint());
+    SmartDashboard.putNumber("Setpoint", this.setpoint);
   }
 
   /*
@@ -77,15 +81,16 @@ public class Shooter extends SubsystemBase {
    * Run the shooter towards a given speed measured in rotations per minute of the mechanism.
    * Closed-Loop controlled (PID) using the krakens onboard encoder.
    */
-  public void runClosedLoop(double rotationsPerMinute) {
-    if (rotationsPerMinute * Constants.Shooter.controlRatio >= Constants.Hardware.kMaxKrakenFreeSpeed) {
+  public void runRPM(double rotationsPerMinute) {
+    this.setpoint = rotationsPerMinute;
+    if (rotationsPerMinute * Constants.Shooter.kControlRatio >= Constants.Hardware.kMaxKrakenFreeSpeed) {
       DriverStation.reportWarning(String.format("WARN: Shooter setpoint %s is greater than maximum attainable motor speed.", rotationsPerMinute), false);
     }
 
-    double raw = kPidController.calculate(shooterVelocityAv, rotationsPerMinute);
+    double raw = kPidController.calculate(this.shooterVelocityAv, rotationsPerMinute);
     double feedforward = calculateFeedforward(rotationsPerMinute);
 
-    this.closedLoopCalculatedOutput = Math.min(Math.max(raw + feedforward, -Constants.Shooter.maxOutput), Constants.Shooter.maxOutput);
+    this.closedLoopCalculatedOutput = Math.min(Math.max(raw + feedforward, -Constants.Shooter.kMaxOutput), Constants.Shooter.kMaxOutput);
     this.run(this.closedLoopCalculatedOutput);
   }
 
@@ -102,15 +107,36 @@ public class Shooter extends SubsystemBase {
     m_shooterR.set(0);
   }
  
+  public boolean isAtSetpoint() {
+    if (Math.abs(this.setpoint - this.shooterVelocityAv) <= 15) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public void reset() {
+    this.closedLoopCalculatedOutput = 0;
+    kPidController.reset();
+  }
+
+    /*
+   * Run the shooter with a given percentage of max output.
+   * (-1, 1), where -1 is a backwards motion of the shooter.
+   */
   public Command runPercentageCommand(double percentage) {
     return this.startEnd(() -> this.run(percentage), () -> this.coast());
   }
 
+  /*
+   * Run the shooter towards a given speed measured in rotations per minute of the mechanism.
+   * Closed-Loop controlled (PID) using the krakens onboard encoder.
+   */
   public Command runRPMCommand(double rpm) {
     return new FunctionalCommand(
-      () -> kPidController.reset(),                // initialize
-      () -> runClosedLoop(rpm),                    // execute
-      interrupted -> coast(),                      // end (with interrupted flag)
+      () -> reset(),                // initialize
+      () -> runRPM(rpm),                    // execute
+      interrupted -> reset(),                      // end (with interrupted flag)
       () -> false,                                 // isFinished (never finishes on its own)
       this                                         // requirements
     );

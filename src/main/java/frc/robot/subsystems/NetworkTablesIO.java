@@ -5,6 +5,7 @@
 package frc.robot.subsystems;
 
 import java.text.DecimalFormat;
+import java.util.Optional;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rectangle2d;
@@ -15,8 +16,10 @@ import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 
 public class NetworkTablesIO extends SubsystemBase {
   Pose2d drivetrainPose = new Pose2d();
@@ -114,6 +117,85 @@ public class NetworkTablesIO extends SubsystemBase {
   }
 
   public double getMatchTime() {
-    return 0.0;
+    return DriverStation.getMatchTime();
+  }
+
+  public Constants.DS.GameState getMatchState() {
+    if (!DriverStation.isDSAttached()) {
+      return Constants.DS.GameState.NONE;
+    }
+    if (DriverStation.isAutonomousEnabled()) {
+      return Constants.DS.GameState.AUTONOMOUS;
+    }
+    double matchTime = getMatchTime();
+    if (matchTime > 130) {
+      return Constants.DS.GameState.TRANSITION;
+    } else if (matchTime > 105) {
+      return Constants.DS.GameState.SHIFT1;
+    } else if (matchTime > 80) {
+      return Constants.DS.GameState.SHIFT2;
+    } else if (matchTime > 55) {
+      return Constants.DS.GameState.SHIFT3;
+    } else if (matchTime > 30) {
+      return Constants.DS.GameState.SHIFT4;
+    } else {
+      return Constants.DS.GameState.ENDGAME;
+    }
+  }
+  
+  public boolean isHubActive() {
+    // Copypasted from the example code @ https://docs.wpilib.org/en/stable/docs/yearly-overview/2026-game-data.html
+
+    Optional<Alliance> alliance = DriverStation.getAlliance();
+    if (alliance.isEmpty()) {
+      return false;
+    }
+
+    if (DriverStation.isAutonomousEnabled()) {
+      return true;
+    }
+    
+    if (!DriverStation.isTeleopEnabled()) {
+      return false;
+    }
+
+    double matchTime = DriverStation.getMatchTime();
+    String gameData = DriverStation.getGameSpecificMessage();
+    if (gameData.isEmpty()) {
+      return true;
+    }
+    boolean redInactiveFirst = false;
+    switch (gameData.charAt(0)) {
+      case 'R' -> redInactiveFirst = true;
+      case 'B' -> redInactiveFirst = false;
+      default -> {
+        return true;
+      }
+    }
+
+    boolean shift1Active = switch (alliance.get()) {
+      case Red -> !redInactiveFirst;
+      case Blue -> redInactiveFirst;
+    };
+
+    if (matchTime > 130) {
+      // Transition shift, hub is active.
+      return true;
+    } else if (matchTime > 105) {
+      // Shift 1
+      return shift1Active;
+    } else if (matchTime > 80) {
+      // Shift 2
+      return !shift1Active;
+    } else if (matchTime > 55) {
+      // Shift 3
+      return shift1Active;
+    } else if (matchTime > 30) {
+      // Shift 4
+      return !shift1Active;
+    } else {
+      // End game, hub always active.
+      return true;
+    }
   }
 }
