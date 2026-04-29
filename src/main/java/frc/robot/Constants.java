@@ -13,8 +13,9 @@ public final class Constants {
         public static final int kArmId = 16; // minicim
         public static final int kShooterLId = 19; // kraken
         public static final int kShooterRId = 18; // kraken
-        public static final int kLoaderId = 21; // probably a cim or a redline
-        
+        public static final int kFeederSPXId = 21;
+        public static final int kFeederFXId = 22;
+
         // rev through bore encoder
         public static final int kArmEncoderAChannel = 2; // blue wire
         public static final int kArmEncoderBChannel = 3; // yellow(?) wire
@@ -85,10 +86,7 @@ public final class Constants {
 
     public static class Feeder {
         public static final double kControlRatio = 1;
-    }
-
-    public static class Loader {
-        public static final double kLoadSpeed = 0.8;
+        public static final double kFeedSpeed = 0.8;
     }
     
     public static class DS {

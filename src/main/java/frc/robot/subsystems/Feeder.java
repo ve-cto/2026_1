@@ -17,7 +17,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
 public class Feeder extends SubsystemBase {
-  private final TalonFX m_feeder;
+  private final TalonFX m_feederFX;
+  private final WPI_VictorSPX m_feederSPX;
   private double mechanismVelocity;
   private double setpoint;
   private double motorVelocity;
@@ -26,54 +27,69 @@ public class Feeder extends SubsystemBase {
   private final PIDController kPidController;
   /** Creates a new Feeder. */
   public Feeder() {
-    m_feeder = new TalonFX(Constants.Hardware.kLoaderId);
+    m_feederSPX = new WPI_VictorSPX(Constants.Hardware.kFeederSPXId);
+    m_feederFX = new TalonFX(Constants.Hardware.kFeederFXId);
     kPidController = new PIDController(0.0001, 0.0008, 0.0);
   }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    this.motorVelocity = m_feeder.getRotorVelocity().getValue().in(RotationsPerSecond) * 60;
-    this.mechanismVelocity = this.motorVelocity / Constants.Feeder.kControlRatio;
-  //   private double mechanismVelocity;
-    // private double setpoint;
-    // private double motorVelocity;
-    // private double closedLoopCalculatedOutput;
-    SmartDashboard.putNumber("Feeder Mechanism Velocity", this.mechanismVelocity);
-    SmartDashboard.putNumber("Feeder Motor Velocity", this.motorVelocity);
-    SmartDashboard.putNumber("Feeder Setpoint", this.setpoint);
-    SmartDashboard.putNumber("Feeder Output", this.closedLoopCalculatedOutput);
+    if (m_feederFX.isConnected()) {
+      this.motorVelocity = m_feederFX.getRotorVelocity().getValue().in(RotationsPerSecond) * 60;
+      this.mechanismVelocity = this.motorVelocity / Constants.Feeder.kControlRatio;
+      // private double mechanismVelocity;
+      // private double setpoint;
+      // private double motorVelocity;
+      // private double closedLoopCalculatedOutput;
+      SmartDashboard.putNumber("Feeder Mechanism Velocity", this.mechanismVelocity);
+      SmartDashboard.putNumber("Feeder Motor Velocity", this.motorVelocity);
+      SmartDashboard.putNumber("Feeder Setpoint", this.setpoint);
+      SmartDashboard.putNumber("Feeder Output", this.closedLoopCalculatedOutput);
+    }
   }
 
   public void run(double speed) {
-    m_feeder.set(speed);
+    m_feederFX.set(speed);
+    m_feederSPX.set(speed);
   }
 
   public void stop() {
-    m_feeder.stopMotor();
+    m_feederFX.stopMotor();
+    m_feederSPX.stopMotor();
   }
 
   public void coast() {
-    m_feeder.set(0.0);
+    m_feederFX.set(0.0);
+    m_feederSPX.set(0.0);
   }
 
   public void runRPM(double rotationsPerMinute) {
-    this.setpoint = rotationsPerMinute;
-    if (rotationsPerMinute * Constants.Feeder.kControlRatio >= Constants.Hardware.kMaxKrakenFreeSpeed) {
-      DriverStation.reportWarning(String.format("WARN: Feeder setpoint %s is greater than maximum attainable motor speed.", rotationsPerMinute), false);
+    if (!m_feederFX.isConnected()) {
+      DriverStation.reportWarning(String.format("WARN: Method invoking TalonFX ID %s was called with no motor connected. Abandoning request.", Constants.Hardware.kFeederFXId), false);
+      return;
+    } else {
+      this.setpoint = rotationsPerMinute;
+      if (rotationsPerMinute * Constants.Feeder.kControlRatio >= Constants.Hardware.kMaxKrakenFreeSpeed) {
+        DriverStation.reportWarning(String.format("WARN: Feeder setpoint %s is greater than maximum attainable motor speed.", rotationsPerMinute), false);
+      }
+
+      double raw = kPidController.calculate(this.mechanismVelocity, rotationsPerMinute);
+
+      this.closedLoopCalculatedOutput = Math.min(Math.max(raw, -Constants.Shooter.kMaxOutput), Constants.Shooter.kMaxOutput);
+      this.run(this.closedLoopCalculatedOutput);
     }
-
-    double raw = kPidController.calculate(this.mechanismVelocity, rotationsPerMinute);
-
-    this.closedLoopCalculatedOutput = Math.min(Math.max(raw, -Constants.Shooter.kMaxOutput), Constants.Shooter.kMaxOutput);
-    this.run(this.closedLoopCalculatedOutput);
   }
 
-  public Command feedCommand(double rotationsPerMinute) {
+  public Command feedCommand(int rotationsPerMinute) {
     return startEnd(() -> this.runRPM(rotationsPerMinute), () -> this.coast());
   }
 
+  public Command feedCommand(double speed) {
+    return startEnd(() -> this.run(speed), () -> this.coast());
+  }
+
   public Command feedCommand() {
-    return startEnd(() -> this.run(Constants.Loader.kLoadSpeed), () -> this.coast());
+    return startEnd(() -> this.run(Constants.Feeder.kFeedSpeed), () -> this.coast());
   }
 }
