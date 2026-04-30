@@ -180,19 +180,19 @@ public class RobotContainer {
             m_feeder.feedCommand(0.8)
         );
 
-        // driveJoystick.povLeft().and(() -> m_shooter.isAtSetpoint()).whileTrue(
-        //     m_feeder.feedCommand(0.8).alongWith(m_intake.runIntakeCommand())
-        // );
-        // driveJoystick.povLeft().and(() -> m_shooter.isAtSetpoint()).negate().whileTrue(
-        //     m_feeder.feedCommand(-0.2) // If we aren't ready to shoot, try to move balls back to stop them from entering the shooter.
-        // );
-        // driveJoystick.povLeft().whileTrue(
-        //     m_shooter.runRPMCommand(3500).alongWith(new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO))
-        // );
-
-        driveJoystick.povLeft().whileTrue(
-            m_shooter.runRPMCommand(3500).alongWith(new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO)).alongWith(m_feeder.feedCommand(0.8)).alongWith(m_intake.runIntakeCommand())
+        driveJoystick.povLeft().and(() -> m_shooter.isAtSetpoint()).whileTrue(
+            m_feeder.feedCommand(0.8).alongWith(m_intake.runIntakeCommand())
         );
+        driveJoystick.povLeft().and(() -> m_shooter.isAtSetpoint()).negate().whileTrue(
+            m_feeder.feedCommand(-0.1) // If we aren't ready to shoot, try to move balls back to stop them from entering the shooter.
+        );
+        driveJoystick.povLeft().whileTrue(
+            m_shooter.runRPMCommand(3000).alongWith(new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO))
+        );
+
+        // driveJoystick.povLeft().whileTrue(
+        //     m_shooter.runRPMCommand(3500).alongWith(new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO)).alongWith(m_feeder.feedCommand(0.8)).alongWith(m_intake.runIntakeCommand())
+        // );
 
         driveJoystick.povDown().whileTrue(
             m_arm.moveArmCommand(-0.7)
@@ -208,9 +208,9 @@ public class RobotContainer {
             m_shooter.coastCommand()
         );
 
-        driveJoystick.x().whileTrue(m_shooter.runRPMCommand(2500));
-        driveJoystick.y().whileTrue(m_shooter.runRPMCommand(2800));
-        driveJoystick.b().whileTrue(m_shooter.runRPMCommand(3000));
+        driveJoystick.x().whileTrue(m_shooter.runRPMCommand(3000));
+        driveJoystick.y().whileTrue(m_shooter.runRPMCommand(3500));
+        driveJoystick.b().whileTrue(m_shooter.runRPMCommand(4000));
         
         // driveJoystick.x().and(() -> m_shooter.isAtSetpoint()).whileTrue(m_feeder.feedCommand());
 

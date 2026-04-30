@@ -11,8 +11,8 @@ public final class Constants {
         // Swerve takes up the CAN network up to value 12, thus, all motors must be assigned ID's of 13 or higher.
         public static final int kIntakeId = 17; // minicim
         public static final int kArmId = 16; // minicim
-        public static final int kShooterLId = 19; // kraken
-        public static final int kShooterRId = 18; // kraken
+        public static final int kShooterLId = 18; // kraken
+        public static final int kShooterRId = 19; // kraken
         public static final int kFeederSPXId = 20;
         public static final int kFeederFXId = 21;
 
@@ -79,7 +79,7 @@ public final class Constants {
     }
 
     public static class Shooter {
-        public static final double kControlRatio = (1.636); // Every 4 rotations of the motor, one rotation of the mechanism
+        public static final double kControlRatio = (1.2); // Every 4 rotations of the motor, one rotation of the mechanism
         public static final double kMaxOutput = 0.975; // Limit the maximum percentage output applied to the shooter motors to avoid overdraw
         public static final double setpointDeadband = 50;
     }

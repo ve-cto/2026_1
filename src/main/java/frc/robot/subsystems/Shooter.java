@@ -22,6 +22,9 @@ import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+
 public class Shooter extends SubsystemBase {
   private final TalonFX m_shooterL;
   private final TalonFX m_shooterR;
@@ -32,18 +35,28 @@ public class Shooter extends SubsystemBase {
   private final PIDController kPidController;
 
   private double shooterLRPM;
+  private double kp;
+  private double ki;
+  private double kd;
   private double shooterRRPM;
   private double mechanismVelocityAv;
+  private double mechanismVelocityHistoryAv;
   private double closedLoopCalculatedOutput;
   private double setpoint = 0;
   private double motorsVelocityAv;
+  private Queue<Double> mechanismVelocityAvHistory = new ArrayBlockingQueue<>(10);
 
   /** Creates a new Shooter. */
   public Shooter() {
     m_shooterL = new TalonFX(Constants.Hardware.kShooterLId);
     m_shooterR = new TalonFX(Constants.Hardware.kShooterRId);
     // kPidController = new PIDController(0.001, 0.01, 0.0);
-    kPidController = new PIDController(0.0001, 0.0008, 0.0);
+    // kPidController = new PIDController(0.0001, 0.0008, 0.0);
+    kPidController = new PIDController(0, 0, 0);
+
+    SmartDashboard.putNumber("kp", 0.0003);
+    SmartDashboard.putNumber("ki", 0.001);
+    SmartDashboard.putNumber("kd", 0);
   }
 
   /*
@@ -51,7 +64,7 @@ public class Shooter extends SubsystemBase {
    */
   public double calculateFeedforward(double rotationsPerMinute) {
     // double ff = (0.000688 * rotationsPerMinute + 0.0052);
-    double ff = (0.00015 * rotationsPerMinute + 0.236667);
+    double ff = (0.000075* rotationsPerMinute + 0);
     return ff;
   }
 
@@ -61,8 +74,14 @@ public class Shooter extends SubsystemBase {
     this.shooterLRPM = (m_shooterL.getRotorVelocity().getValue().in(RotationsPerSecond) * 60);
     this.shooterRRPM = (m_shooterR.getRotorVelocity().getValue().in(RotationsPerSecond) * 60);
     
-    this.mechanismVelocityAv = ((-this.shooterLRPM + this.shooterRRPM) / Constants.Shooter.kControlRatio) / 2;
     this.motorsVelocityAv = (-this.shooterLRPM + this.shooterRRPM) / 2;
+    this.mechanismVelocityAv = ((-this.shooterLRPM + this.shooterRRPM) / 2) * Constants.Shooter.kControlRatio;
+
+    if (this.mechanismVelocityAvHistory.size() >= 10) {
+      mechanismVelocityAvHistory.poll();
+    }
+    mechanismVelocityAvHistory.add(this .mechanismVelocityAv);
+    this.mechanismVelocityHistoryAv = mechanismVelocityAvHistory.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
 
     SmartDashboard.putBoolean("isAtSetpoint", isAtSetpoint());
     SmartDashboard.putNumber("Setpoint", this.setpoint);
@@ -71,6 +90,12 @@ public class Shooter extends SubsystemBase {
     SmartDashboard.putNumber("mechanismVelocityAv", this.mechanismVelocityAv);
     SmartDashboard.putNumber("motorsVelocityAv", this.motorsVelocityAv);
     SmartDashboard.putNumber("ShooterOutput", this.closedLoopCalculatedOutput);
+    this.kp = SmartDashboard.getNumber("kp", 0);
+    this.ki = SmartDashboard.getNumber("ki", 0);
+    this.kd = SmartDashboard.getNumber("kd", 0);
+    
+    this.kPidController.setPID(this.kp, this.ki, this.kd);
+
   }
 
   /*
@@ -115,7 +140,7 @@ public class Shooter extends SubsystemBase {
   }
  
   public boolean isAtSetpoint() {
-    if (Math.abs(this.setpoint - this.mechanismVelocityAv) <= Constants.Shooter.setpointDeadband) {
+    if (Math.abs(this.setpoint - this.mechanismVelocityHistoryAv) <= Constants.Shooter.setpointDeadband) {
       return true;
     } else {
       return false;
