@@ -200,14 +200,14 @@ public class Led extends SubsystemBase {
      * first causes the led's to stop flashing, and then sets them to be blank
      */
     public Command clear() {
-        return runOnce(() -> this.stopFlashing()).andThen(() -> this.setStatus(Constants.Led.StatusList.BLANK));
+        return run(() -> this.stopFlashing()).andThen(() -> this.setStatus(Constants.Led.StatusList.BLANK));
     }
 
     /*
      * tell the led's to show a status
      */
     public Command display(Constants.Led.StatusList status) {
-        return runOnce(() -> this.setStatus(status));
+        return run(() -> this.setStatus(status));
     }
 
     /*
@@ -222,7 +222,7 @@ public class Led extends SubsystemBase {
      * fetched from the DriverStation when called.
      */
     public Command displayTeleAuto() {
-        return runOnce(() -> {
+        return run(() -> {
             if (DriverStation.isTeleop()) {
                 this.setStatus(Constants.Led.StatusList.TELEOP); 
 
@@ -251,7 +251,7 @@ public class Led extends SubsystemBase {
      * shocking, i know, my pants have been blown off
      */
     public Command handleDefault() {
-        return runOnce(() -> {
+        return run(() -> {
             if (DriverStation.isEStopped()) {
                 return;
             } else {

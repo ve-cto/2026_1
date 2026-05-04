@@ -112,7 +112,7 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
-        // #region Swerve
+        // #region Swerve Setup
         drivetrain.setDefaultCommand(
             // Set default drivetrain command to be driving with joysticks. Unless another command is scheduled (such as PointToHub), this command will run.
             drivetrain.applyRequest(() ->
@@ -122,14 +122,10 @@ public class RobotContainer {
             )
         );
 
-        // Drive robot-centric instead of field-centric while held.
-        // driveJoystick.leftBumper().whileTrue(
-        //     drivetrain.applyRequest(() ->
-        //         driveRobotCentric.withVelocityX(-driveJoystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-        //             .withVelocityY(-driveJoystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-        //             .withRotationalRate(-driveJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
-        //     )
-        // );
+        // Point the modules towards the direction of the left stick, without driving the robot. Note that this does not get updated while holding, only on initialize. (They aren't double suppliers)
+        // driveJoystick.triangle().whileTrue(drivetrain.applyRequest(() ->
+        //     point.withModuleDirection(new Rotation2d(-driveJoystick.getLeftY(), -driveJoystick.getLeftX()))
+        // ));
 
         // Make the drivetrain idle when robot is disabled. (note that this is called only once)
         final var swerveIdle = new SwerveRequest.Idle();
@@ -140,15 +136,6 @@ public class RobotContainer {
         RobotModeTriggers.test().whileTrue(
             drivetrain.applyRequest(() -> swerveIdle).ignoringDisable(true)
         );
-
-        // Brake while holding. When the robot brakes, the four drive motors stop and the modules point towards the center of the robot.
-        // driveJoystick.rightBumper().whileTrue(drivetrain.applyRequest(() -> brake));
-        // driveJoystick.R1().whileTrue(drivetrain.applyRequest(() -> brake));
-        
-        // Point the modules towards the direction of the left stick, without driving the robot. Note that this does not get updated while holding, only on initialize. (They aren't double suppliers)
-        // driveJoystick.triangle().whileTrue(drivetrain.applyRequest(() ->
-        //     point.withModuleDirection(new Rotation2d(-driveJoystick.getLeftY(), -driveJoystick.getLeftX()))
-        // ));
 
         // Run SysId routines when holding back/start and X/Y.
         // Note that each routine should be run exactly once in a single log.
@@ -165,12 +152,18 @@ public class RobotContainer {
         drivetrain.registerTelemetry(logger::telemeterize);
         // #endregion Swerve
 
-        // #region LEDs
-        // Default to displaying the specific modes' pattern (disconn, disabl, auto, teleop)
-        m_led.setDefaultCommand(m_led.handleDefault().ignoringDisable(true));
-        // If the robot is ESTOPPED, flash
-        RobotModeTriggers.disabled().and(() -> DriverStation.isEStopped()).whileTrue(m_led.estop().ignoringDisable(true));
-        // #endregion LEDs
+        // Drive robot-centric instead of field-centric while held.
+        // driveJoystick.leftBumper().whileTrue(
+        //     drivetrain.applyRequest(() ->
+        //         driveRobotCentric.withVelocityX(-driveJoystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+        //             .withVelocityY(-driveJoystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+        //             .withRotationalRate(-driveJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+        //     )
+        // );
+        
+        // Brake while holding. When the robot brakes, the four drive motors stop and the modules point towards the center of the robot.
+        // driveJoystick.rightBumper().whileTrue(drivetrain.applyRequest(() -> brake));
+        // driveJoystick.R1().whileTrue(drivetrain.applyRequest(() -> brake));
 
         driveJoystick.leftBumper().whileTrue(
             m_intake.runIntakeCommand()
@@ -180,11 +173,11 @@ public class RobotContainer {
             m_feeder.feedCommand(0.8)
         );
 
-        driveJoystick.povLeft().and(() -> m_shooter.isAtSetpoint()).whileTrue(
+        driveJoystick.povLeft().and(m_shooter.atSetpoint()).whileTrue(
             m_feeder.feedCommand(0.8).alongWith(m_intake.runIntakeCommand())
         );
-        driveJoystick.povLeft().and(() -> m_shooter.isAtSetpoint()).negate().whileTrue(
-            m_feeder.feedCommand(-0.1) // If we aren't ready to shoot, try to move balls back to stop them from entering the shooter.
+        driveJoystick.povLeft().and(m_shooter.atSetpoint()).negate().whileTrue(
+            m_feeder.feedCommand(-0.3) // If we aren't ready to shoot, try to move balls back to stop them from entering the shooter.
         );
         driveJoystick.povLeft().whileTrue(
             m_shooter.runRPMCommand(3000).alongWith(new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO))
@@ -227,15 +220,21 @@ public class RobotContainer {
         //     new DriveToPose(new Pose2d(1.0, 1.0, new Rotation2d()), drivetrain, m_networkTablesIO)
         // );
         
-        // While the robot is not disabled (NOT in auto, teleop, test), add m_vision measurements to pose.
-        RobotModeTriggers.disabled().whileFalse(
-            m_vision.addVisionMeasurementCommand()
-        );
-
         // driveJoystick.a().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
         //     new PointToAllianceFuel(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO).alongWith(m_shooter.runRPMCommand(100))
         // );
- 
+
+        // #region LEDs
+        // Default to displaying the specific modes' pattern (disconn, disabl, auto, teleop)
+        m_led.setDefaultCommand(m_led.handleDefault().ignoringDisable(true));
+        
+        m_shooter.atSetpoint().and(m_shooter.isCommanded()).whileTrue(m_led.display(Constants.Led.StatusList.ALIGNED));
+
+
+        // If the robot is ESTOPPED, flash
+        RobotModeTriggers.disabled().and(() -> DriverStation.isEStopped()).whileTrue(m_led.estop().ignoringDisable(true));
+        // #endregion LEDs
+        
         // #region DebugMotors
         // Forward
         // driveJoystick.povUp().and(driveJoystick.leftBumper().negate()).whileTrue(new RunDebugMotors(3, () -> driveJoystick.getLeftTriggerAxis(), m_DebugMotors));
@@ -248,6 +247,11 @@ public class RobotContainer {
         // driveJoystick.povDown().and(driveJoystick.leftBumper()).whileTrue(new RunDebugMotors(5, () -> driveJoystick.getLeftTriggerAxis(), m_DebugMotors));
         // driveJoystick.povLeft().and(driveJoystick.leftBumper()).whileTrue(new RunDebugMotors(4, () -> -driveJoystick.getLeftTriggerAxis(), m_DebugMotors));
         // #endregion DebugMotors
+    
+        // While the robot is not disabled (NOT in auto, teleop, test), add m_vision measurements to pose.
+        RobotModeTriggers.disabled().whileFalse(
+            m_vision.addVisionMeasurementCommand()
+        );
     }
     
     public Command getAutonomousCommand() {

@@ -15,15 +15,18 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.event.BooleanEvent;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.function.BooleanSupplier;
 
 public class Shooter extends SubsystemBase {
   private final TalonFX m_shooterL;
@@ -34,6 +37,7 @@ public class Shooter extends SubsystemBase {
 
   private final PIDController kPidController;
 
+  private boolean isCommanded = false;
   private double shooterLRPM;
   private double kp;
   private double ki;
@@ -114,6 +118,7 @@ public class Shooter extends SubsystemBase {
    * Closed-Loop controlled (PID) using the krakens onboard encoder.
    */
   public void runRPM(double rotationsPerMinute) {
+    this.isCommanded = true;
     this.setpoint = rotationsPerMinute;
     if (rotationsPerMinute * Constants.Shooter.kControlRatio >= Constants.Hardware.kMaxKrakenFreeSpeed) {
       DriverStation.reportWarning(String.format("WARN: Shooter setpoint %s is greater than maximum attainable motor speed.", rotationsPerMinute), false);
@@ -127,6 +132,7 @@ public class Shooter extends SubsystemBase {
   }
 
   public void stop() {
+    this.isCommanded = false;
     m_shooterL.stopMotor();
     m_shooterR.stopMotor();
   }
@@ -135,6 +141,7 @@ public class Shooter extends SubsystemBase {
    * Set's motor output to 0, but does not apply braking force.
    */
   public void coast() {
+    this.isCommanded = false;
     m_shooterL.set(0);
     m_shooterR.set(0);
   }
@@ -150,9 +157,18 @@ public class Shooter extends SubsystemBase {
   public void reset() {
     this.closedLoopCalculatedOutput = 0;
     kPidController.reset();
+    this.setpoint = 0;
   }
 
-    /*
+  public Trigger atSetpoint() {
+    return new Trigger(() -> this.isAtSetpoint());
+  }
+
+  public Trigger isCommanded() {
+    return new Trigger(() -> this.isCommanded);
+  }
+
+  /*
    * Run the shooter with a given percentage of max output.
    * (-1, 1), where -1 is a backwards motion of the shooter.
    */
