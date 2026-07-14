@@ -510,7 +510,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     point.HeadingController = m_thetaController;
     }
 
-    public void pointToPose(Pose2d targetPose, double velX, double velY) {
+    public double pointToPose(Pose2d targetPose, double velX, double velY) {
         Pose2d curPose = this.getState().Pose;
         Translation2d targetPoseRelative = targetPose.getTranslation().minus(curPose.getTranslation());
         Rotation2d targetRotationRelative = new Rotation2d(Math.atan2(-targetPoseRelative.getY(), -targetPoseRelative.getX()));
@@ -522,7 +522,24 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             .withVelocityY(velY)
             .withTargetDirection(targetRotationRelative)
         );
+        // double offset = targetRotationRelative.getRadians() - curPose.getRotation().getRadians();
+        // double offset = Math.abs(targetRotationRelative.getRadians());
+        // double offset = Math.toDegrees(Math.acos((-targetPoseRelative.getX()*curPose.getRotation().getSin() - targetPoseRelative.getY()*curPose.getRotation().getCos()) / targetPoseRelative.getNorm()));
+        double offset = Math.toDegrees(Math.atan2(targetPose.getY() - curPose.getY(), targetPose.getX() - curPose.getX()));
+        offset = offset - curPose.getRotation().getDegrees();
+        offset = Math.toRadians(normalizeDegrees(offset));
+        // double offset2 = Math.toDegrees(curPose.getRotation().getRadians())-offset;
+        // SmartDashboard.putNumber("currposeradians", curPose.getRotation().getRadians());
+        SmartDashboard.putNumber("pointoffset", offset);
+        return offset;
     }
+    public static double normalizeDegrees(double angle) {
+        angle = angle % 360;
+        if (angle > 180) angle -= 360;
+        if (angle < -180) angle += 360;
+        return angle;
+    }
+
 
     // private final Pose2d blueHubPose = new Pose2d(4.65, 4, new Rotation2d());
     // private final Pose2d redHubPose = new Pose2d(12, 4, new Rotation2d());

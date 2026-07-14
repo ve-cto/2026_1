@@ -35,6 +35,9 @@ public class NetworkTablesIO extends SubsystemBase {
   private boolean isInBlueAllianceZone = false;
   private boolean isInCenterField = false;
 
+  private final Pose2d blueHubPose = new Pose2d(4.65, 4, new Rotation2d());
+  private final Pose2d redHubPose = new Pose2d(12, 4, new Rotation2d());
+
   private final NetworkTableInstance ntInst = NetworkTableInstance.getDefault();
   private final NetworkTable fmsTable = ntInst.getTable("FMSInfo");
   private final NetworkTable drivetrainTable = ntInst.getTable("Pose");
@@ -137,6 +140,15 @@ public class NetworkTablesIO extends SubsystemBase {
 
   public boolean getAlliance() {
     return this.isRedAlliance;
+  }
+
+  public Pose2d getOwnHubPose() {
+    if (!getAlliance()) {
+      // blue alliance
+      return blueHubPose;
+    } else {
+      return redHubPose;
+    }
   }
 
   public double getMatchTime() {

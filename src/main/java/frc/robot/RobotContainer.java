@@ -44,6 +44,7 @@ import frc.robot.commands.drive.PointToHub;
 import frc.robot.commands.drive.PointToAngle;
 // import frc.robot.commands.drive.PointToPose;
 import frc.robot.commands.RunDebugMotors;
+import frc.robot.commands.ShootAtTarget;
 // import frc.robot.commands.drive.PointToAllianceFuel;
 // Subsystems
 import frc.robot.subsystems.Intake;
@@ -272,35 +273,48 @@ public class RobotContainer {
         // driveJoystick.a().whileTrue(m_hood.resetHomeCommand());
         // m_hood.setDefaultCommand(m_hood.holdCommand());
 
-        driveJoystick.povRight().whileTrue(
-            new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO)    
-            // new PointToAngle(m_trajectoryCalculator.getRequiredRobotAngleSOTM(drivetrain.getState()), () -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain)
-            .alongWith(
-                m_shooter.runRPMCommand(m_trajectoryCalculator.getRequiredShooterSpeedHub())
-                // m_shooter.runRPMCommand(m_trajectoryCalculator.getRequiredShooterSpeedSOTM(drivetrain.getState()))
-                // m_shooter.runRPMCommand(() -> 10000)
-            )
-            .alongWith(
-                // m_hood.gotoAngleCommand(m_trajectoryCalculator.getRequiredHoodAngleSOTM(drivetrain.getState()))
-                // m_hood.runCommand(1)
-                m_hood.gotoAngleCommand(m_trajectoryCalculator.getRequiredHoodAngleHub())
-            )
-            // .alongWith(
-            //     m_intake.runIntakeCommand()
-            // )
-            // .alongWith(
-            //     m_led.displayShooterSepoint(m_shooter.getLedProgressMark()).onlyIf(driveJoystick.a().negate().and(m_shooter.atSetpoint().negate()))
-            // )
-        );
-        driveJoystick.a().and(m_shooter.isCommanded()).whileTrue(
-            m_led.display(Constants.Led.StatusList.SHOOTING)
-        );
 
-        driveJoystick.povRight().and(driveJoystick.a().negate()).whileTrue(
-            m_led.displayShooterSepoint(m_shooter.getLedProgressMark())
+        driveJoystick.a().whileTrue(
+            new ShootAtTarget(
+                () -> m_networkTablesIO.getOwnHubPose(), 
+                () -> -driveJoystick.getLeftY() * MaxSpeed, 
+                () -> -driveJoystick.getLeftX() * MaxSpeed, 
+                m_shooter, 
+                m_hood, 
+                drivetrain, 
+                m_feeder, 
+                m_trajectoryCalculator
+            )
         );
+        // driveJoystick.povRight().whileTrue(
+        //     new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO)    
+        //     // new PointToAngle(m_trajectoryCalculator.getRequiredRobotAngleSOTM(drivetrain.getState()), () -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain)
+        //     .alongWith(
+        //         m_shooter.runRPMCommand(m_trajectoryCalculator.getRequiredShooterSpeedHub())
+        //         // m_shooter.runRPMCommand(m_trajectoryCalculator.getRequiredShooterSpeedSOTM(drivetrain.getState()))
+        //         // m_shooter.runRPMCommand(() -> 10000)
+        //     )
+        //     .alongWith(
+        //         // m_hood.gotoAngleCommand(m_trajectoryCalculator.getRequiredHoodAngleSOTM(drivetrain.getState()))
+        //         // m_hood.runCommand(1)
+        //         m_hood.gotoAngleCommand(m_trajectoryCalculator.getRequiredHoodAngleHub())
+        //     )
+        //     // .alongWith(
+        //     //     m_intake.runIntakeCommand()
+        //     // )
+        //     // .alongWith(
+        //     //     m_led.displayShooterSepoint(m_shooter.getLedProgressMark()).onlyIf(driveJoystick.a().negate().and(m_shooter.atSetpoint().negate()))
+        //     // )
+        // );
+        // driveJoystick.a().and(m_shooter.isCommanded()).whileTrue(
+        //     m_led.display(Constants.Led.StatusList.SHOOTING)
+        // );
+
+        // driveJoystick.povRight().and(driveJoystick.a().negate()).whileTrue(
+        //     m_led.displayShooterSepoint(m_shooter.getLedProgressMark())
+        // );
         
-        driveJoystick.a().whileTrue(m_feeder.feedCommand());
+        // driveJoystick.a().whileTrue(m_feeder.feedCommand());
         // driveJoystick.a().whileTrue(
         //     Commands.runEnd(
         //         () -> driveJoystick.setRumble(RumbleType.kBothRumble, 1.0),

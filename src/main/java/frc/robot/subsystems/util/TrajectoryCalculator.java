@@ -46,12 +46,12 @@ public class TrajectoryCalculator extends SubsystemBase {
     };
 
     private double hoodAnglePairsDegrees[][] = {
-        {1, 80},
-        {2, 75},
-        {3.5, 70},
-        {4.5, 65},
-        {5.5, 60},
-        {6.5, 60},
+        {1, 67},
+        {2, 60},
+        {3.5, 55},
+        {4.5, 459},
+        {5.5, 47},
+        {6.5, 45},
     };
 
     private double ballAirtimePairs[][] = {
@@ -92,8 +92,11 @@ public class TrajectoryCalculator extends SubsystemBase {
     //     return new InstantCommand(() -> this.driveState = state, this);
     // }
 
+    public void updateVel(double velx, double velY) {
+
+    }
     public Command updateVelocities(DoubleSupplier velX, DoubleSupplier velY) {
-        return new InstantCommand(() -> {this.robotVelX = velX.getAsDouble(); this.robotVelY = velY.getAsDouble();}, this).asProxy();
+        return run(() -> this.updateVel(velX.getAsDouble(), velY.getAsDouble()));
     }
 
     public DoubleSupplier getRequiredRobotAngleSOTM(SwerveDriveState state) {

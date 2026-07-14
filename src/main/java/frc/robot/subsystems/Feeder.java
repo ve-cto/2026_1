@@ -90,6 +90,10 @@ public class Feeder extends SubsystemBase {
   //   return startEnd(() -> this.runRPM(rotationsPerMinute), () -> this.coast());
   // }
 
+  public void feed() {
+    this.run(Constants.Feeder.kFeedSpeed);
+  }
+
   public Command feedCommand(double speed) {
     return startEnd(() -> this.run(speed), () -> this.coast());
   }
@@ -99,6 +103,6 @@ public class Feeder extends SubsystemBase {
   }
 
   public Command feedCommand() {
-    return startEnd(() -> this.run(Constants.Feeder.kFeedSpeed), () -> this.coast());
+    return startEnd(() -> this.feed(), () -> this.coast());
   }
 }
