@@ -13,6 +13,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.NetworkTableValue;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
@@ -28,6 +29,10 @@ public class TrajectoryCalculator extends SubsystemBase {
     private final Pose2d redHubPose = new Pose2d(12, 4, new Rotation2d());
     private double hubHeightMeters = 1.8288;
     private double hubHeightInches = 72;
+    private double robotVelX = 0;
+    private double robotVelY = 0;
+
+    private SwerveDriveState driveState = new SwerveDriveState();
 
     private boolean isRedAlliance = true;
 
@@ -49,33 +54,46 @@ public class TrajectoryCalculator extends SubsystemBase {
         {6.5, 60},
     };
 
+    private double ballAirtimePairs[][] = {
+        {1, 0},
+        {2, 0},
+        {3.5, 0},
+        {4.5, 0},
+        {5.5, 0},
+        {6.5, 0},
+    };
+
     private InterpolatingDoubleTreeMap shooterSpeedTreeMap = new InterpolatingDoubleTreeMap();
     private InterpolatingDoubleTreeMap hoodAngleTreeMap = new InterpolatingDoubleTreeMap();
+    private InterpolatingDoubleTreeMap ballAirtimeTreeMap = new InterpolatingDoubleTreeMap();
 
     public TrajectoryCalculator(NetworkTablesIO m_networkTablesIO) {
         this.networkTablesIO = m_networkTablesIO;
         updateAlliance();
-        // key == distance (METERS)
-        // value == RPM
-        // shooterSpeedTreeMap.put(0.0, 3000.0);
-        // shooterSpeedTreeMap.put(1.0, 3300.0);
-        // shooterSpeedTreeMap.put(2.0, 3500.0);
-
-        // // key == distance (METERS)
-        // // value == RPM
-        // hoodAngleTreeMap.put(0.0, 60*(Math.PI/180));
-        // hoodAngleTreeMap.put(2.0, 50*(Math.PI/180));
-        // hoodAngleTreeMap.put(4.0, 30*(Math.PI/180));
-        // // double result = speedTreeMap.get(1.5);
-
         for (int i = 0; i < shooterSpeedPairs.length; i++) {
             shooterSpeedTreeMap.put(shooterSpeedPairs[i][0], shooterSpeedPairs[i][1]);
         }
 
-
         for (int i = 0; i < hoodAnglePairsDegrees.length; i++) {
             hoodAngleTreeMap.put(hoodAnglePairsDegrees[i][0], hoodAnglePairsDegrees[i][1]);
         }
+
+        for (int i = 0; i < ballAirtimePairs.length; i++) {
+            ballAirtimeTreeMap.put(ballAirtimePairs[i][0], ballAirtimePairs[i][1]);
+        }
+    }
+
+    @Override
+    public void periodic() {
+        
+    }
+
+    // public Command updateState(SwerveDriveState state) {
+    //     return new InstantCommand(() -> this.driveState = state, this);
+    // }
+
+    public Command updateVelocities(DoubleSupplier velX, DoubleSupplier velY) {
+        return new InstantCommand(() -> {this.robotVelX = velX.getAsDouble(); this.robotVelY = velY.getAsDouble();}, this).asProxy();
     }
 
     public DoubleSupplier getRequiredRobotAngleSOTM(SwerveDriveState state) {
@@ -346,6 +364,45 @@ public class TrajectoryCalculator extends SubsystemBase {
 
     //     };
     // }
+
+    public Translation2d getVirTarget(SwerveDriveState state, Pose2d target) {
+        Pose2d pose = networkTablesIO.getNetworkPose();
+        double tarX = target.getX() - pose.getX();
+        double tarY = target.getY() - pose.getY();
+        Translation2d tarPos = new Translation2d(tarX, tarY);
+    
+        double dist = tarPos.getNorm();
+        double idealSpeed = shooterSpeedTreeMap.get(dist); // This ideal speed needs to be the horizontal component of the balls travel. It gets hard because it obviously changes based on hood angle.
+        Translation2d tarVect = target.getTranslation().div(dist).times(idealSpeed);
+    
+        Translation2d robotVel = new Translation2d(this.robotVelX, this.robotVelY);
+
+        Translation2d shotVec = tarVect.minus(robotVel);
+
+        double shotDist = shotVec.getNorm();
+        double shotAngle = shotVec.getAngle().getRadians();
+        
+        Translation2d targetCompensationOffset = robotVel.times(ballAirtimeTreeMap.get(dist));
+        Translation2d compensatedTargetLocation = target.getTranslation().plus(targetCompensationOffset);
+        return (dist > 1) ? compensatedTargetLocation : target.getTranslation();
+    }
+   
+    public double[] getDistanceAngle(Pose2d target) {
+        Translation2d compensatedTarget = getVirTarget(null, target);
+        Pose2d pose = networkTablesIO.getNetworkPose();
+        double compensatedDistanceLength = compensatedTarget.minus(pose.getTranslation()).getNorm();
+        
+        double robotAngleToTargetRads = Math.atan2(compensatedTarget.getY() - pose.getY(), compensatedTarget.getX() - pose.getX());
+
+        return new double[] {compensatedDistanceLength, robotAngleToTargetRads};
+    }
+
+    public double[] getHoodShooterAngle(Pose2d target) {
+        double[] distang = getDistanceAngle(target);
+        double shooterspeed = shooterSpeedTreeMap.get(distang[0]);
+        double hoodangl = hoodAngleTreeMap.get(distang[0]);
+        return new double[] {shooterspeed, hoodangl, distang[1]};
+    }
 
     public void updateAlliance() {
         this.isRedAlliance = networkTablesIO.getAlliance();

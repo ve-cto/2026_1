@@ -190,6 +190,9 @@ public class RobotContainer {
                     .withRotationalRate(-driveJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
         );
+        m_trajectoryCalculator.setDefaultCommand(
+            m_trajectoryCalculator.updateVelocities(() -> drivetrain.getState().Speeds.vxMetersPerSecond, () -> drivetrain.getState().Speeds.vyMetersPerSecond)
+        );
         m_intake.setDefaultCommand(
             m_intake.coastCommand()
         );
