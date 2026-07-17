@@ -42,6 +42,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 // import frc.robot.commands.drive.DriveToPose;
 import frc.robot.commands.drive.PointToHub;
 import frc.robot.commands.drive.PointToAngle;
+import frc.robot.subsystems.Stopper;
 // import frc.robot.commands.drive.PointToPose;
 import frc.robot.commands.RunDebugMotors;
 import frc.robot.commands.ShootAtTarget;
@@ -91,6 +92,7 @@ public class RobotContainer {
     private final Shooter m_shooter = new Shooter();
     private final Feeder m_feeder = new Feeder();
     private final HoodedShooter m_hood = new HoodedShooter();
+    private final Stopper m_stopper = new Stopper();
     private final TrajectoryCalculator m_trajectoryCalculator = new TrajectoryCalculator(m_networkTablesIO);
     // #endregion Subsystems
 
@@ -211,6 +213,9 @@ public class RobotContainer {
         m_hood.setDefaultCommand(
             m_hood.brakeCommand()
         );
+        m_stopper.setDefaultCommand(
+            m_stopper.stopCommand()
+        );
         
         // Default to displaying the specific modes' pattern (disconn, disabl, auto, teleop)
         m_led.setDefaultCommand(
@@ -258,7 +263,27 @@ public class RobotContainer {
             m_arm.moveArmCommand(0.7)
         );
 
-        driveJoystick.b().whileTrue(m_shooter.runDashboard());
+        driveJoystick.povLeft().whileTrue(
+            m_stopper.homeCommand()
+        );
+
+        driveJoystick.povRight().whileTrue(
+            m_stopper.extendCommand()
+        );
+
+        driveJoystick.a().whileTrue(
+            m_feeder.feedCommand()
+        );
+
+        driveJoystick.b().whileTrue(
+            m_shooter.runRPMCommand(
+                () -> 3000
+            )
+        );
+
+        
+
+        // driveJoystick.b().whileTrue(m_shooter.runDashboard());
         // driveJoystick.y().whileTrue(m_shooter.runRPMCommand(3500));
         // driveJoystick.b().whileTrue(m_shooter.runRPMCommand(4000));
         
@@ -267,14 +292,14 @@ public class RobotContainer {
         // driveJoystick.y().whileTrue(m_hood.runCommand(-1.0));
         // driveJoystick.y().whileTrue(m_hood.runSetpointPercentageCommand(0.8));
         // driveJoystick.x().whileTrue(m_hood.homeInCommand());
-        driveJoystick.y().whileTrue(m_hood.gotoDashboard());
+        // driveJoystick.y().whileTrue(m_hood.gotoDashboard());
         // driveJoystick.y().whileTrue(m_hood.runCommand(-1.0));
-        driveJoystick.x().whileTrue(m_hood.homeCommand());
+        // driveJoystick.x().whileTrue(m_hood.homeCommand());
         // driveJoystick.a().whileTrue(m_hood.resetHomeCommand());
         // m_hood.setDefaultCommand(m_hood.holdCommand());
 
-
-        driveJoystick.a().whileTrue(
+        // TODO:
+        driveJoystick.y().whileTrue(
             new ShootAtTarget(
                 () -> m_networkTablesIO.getOwnHubPose(), 
                 () -> -driveJoystick.getLeftY() * MaxSpeed, 
@@ -283,9 +308,15 @@ public class RobotContainer {
                 m_hood, 
                 drivetrain, 
                 m_feeder, 
+                m_stopper,
                 m_trajectoryCalculator
             )
         );
+
+        driveJoystick.x().whileTrue(
+            m_hood.homeCommand()
+        );
+
         // driveJoystick.povRight().whileTrue(
         //     new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO)    
         //     // new PointToAngle(m_trajectoryCalculator.getRequiredRobotAngleSOTM(drivetrain.getState()), () -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain)
@@ -326,16 +357,16 @@ public class RobotContainer {
         //     m_led.display(Constants.Led.StatusList.ALIGNED)
         // ); 
 
-        driveJoystick.povLeft().whileTrue(
-            // m_hood.gotoPercentageCommand(() -> 1.0)
-            m_hood.gotoDashboard()
-            // .alongWith(
-            //     m_shooter.runDashboard()
-            // )
-            // .alongWith(
-            //     m_feeder.feedCommand(0.8)
-            // )
-        );
+        // driveJoystick.povLeft().whileTrue(
+        //     // m_hood.gotoPercentageCommand(() -> 1.0)
+        //     m_hood.gotoDashboard()
+        //     // .alongWith(
+        //     //     m_shooter.runDashboard()
+        //     // )
+        //     // .alongWith(
+        //     //     m_feeder.feedCommand(0.8)
+        //     // )
+        // );
 
         // driveJoystick.x().and(() -> m_shooter.isAtSetpoint()).whileTrue(m_feeder.feedCommand());
 

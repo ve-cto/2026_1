@@ -28,7 +28,7 @@ import frc.robot.subsystems.util.CANUtil;
 
 public class HoodedShooter extends SubsystemBase {
     private final TalonFX m_hood = new TalonFX(Constants.Hardware.kHoodId);
-    private final int s_endstopId = 1;
+    private final int s_endstopId = Constants.Hardware.kHoodEndstopId;
     private final DigitalInput s_endstop = new DigitalInput(s_endstopId);
     
     private double s_hoodPosition = 0;
@@ -155,7 +155,7 @@ public class HoodedShooter extends SubsystemBase {
     public void home() {
         this.setpoint = 0;
         if (!getEndstop()) { // if no endstop, run
-            this.run(-0.2);
+            this.run(-0.35);
         } else if (getEndstop()) { // if endstop, stop
             this.stop();
             if (this.homed == false) {

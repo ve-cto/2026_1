@@ -12,6 +12,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Feeder;
 import frc.robot.subsystems.shooter.HoodedShooter;
+import frc.robot.subsystems.Stopper;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Led;
 import frc.robot.subsystems.shooter.Shooter;
@@ -26,11 +27,12 @@ public class ShootAtTarget extends Command {
   CommandSwerveDrivetrain drivetrain;
   TrajectoryCalculator trajcalc;
   Feeder feeder;
+  Stopper stopper;
   DoubleSupplier velx;
   DoubleSupplier vely;
   double ROTATION_DEADBAND = (10 * Math.PI)/180;
   /** Creates a new ShootAtTarget. */
-  public ShootAtTarget(Supplier<Pose2d> targetSup, DoubleSupplier velx, DoubleSupplier vely, Shooter shooter, HoodedShooter hood, CommandSwerveDrivetrain drivetrain, Feeder feeder, TrajectoryCalculator trajcalc) {
+  public ShootAtTarget(Supplier<Pose2d> targetSup, DoubleSupplier velx, DoubleSupplier vely, Shooter shooter, HoodedShooter hood, CommandSwerveDrivetrain drivetrain, Feeder feeder, Stopper stopper, TrajectoryCalculator trajcalc) {
     // Use addRequirements() here to declare subsystem dependencies.
     this.targetSup = targetSup;
     this.shooter = shooter;
@@ -38,6 +40,7 @@ public class ShootAtTarget extends Command {
     this.drivetrain = drivetrain;
     this.trajcalc = trajcalc;
     this.feeder = feeder;
+    this.stopper = stopper;
     this.velx = velx;
     this.vely = vely;
     addRequirements(shooter, hood, drivetrain, feeder);
@@ -55,11 +58,13 @@ public class ShootAtTarget extends Command {
   public void execute() {
     double[] data = trajcalc.getHoodShooterAngle(target);
     shooter.runRPM(() -> data[0]);
-    hood.runClosedLoopAngle(() -> data[1]);
-    if (Math.abs(drivetrain.pointToPose(target, velx.getAsDouble(), vely.getAsDouble())) < ROTATION_DEADBAND) {
-      feeder.feed();
+    // hood.runClosedLoopAngle(() -> data[1]);
+    feeder.feed();
+    if (Math.abs(drivetrain.pointToPose(target, velx.getAsDouble(), vely.getAsDouble())) < ROTATION_DEADBAND && shooter.isAtSetpoint()) {
+      stopper.home();
+      feeder.run(0.9);
     } else {
-      feeder.coast();
+      stopper.extend();
     }
   }
 
@@ -69,6 +74,7 @@ public class ShootAtTarget extends Command {
     shooter.reset();
     hood.stopreset();
     feeder.coast();
+    stopper.extend();
   }
 
   // Returns true when the command should end.

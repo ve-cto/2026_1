@@ -16,10 +16,19 @@ public final class Constants {
         public static final int kFeederSPXId = 20;
         public static final int kFeederFXId = 21;
         public static final int kHoodId = 22;
+        public static final int kStopperId = 31;
+        
+        public static final int kHoodEndstopId = 1; 
 
         // rev through bore encoder
-        public static final int kArmEncoderAChannel = 4; // blue wire
-        public static final int kArmEncoderBChannel = 5; // yellow(?) wire
+        public static final int kArmEncoderAChannel = 9; // blue wire
+        public static final int kArmEncoderBChannel = 10; // yellow(?) wire
+
+        // rev through bore encoder
+        public static final int kStopperEncoderAChannel = 4; // blue wire
+        public static final int kStopperEncoderBChannel = 5; // yellow(?) wire
+        public static final int kStopperSwitchChannel = 6;
+        
 
         public static final int kDebugMotor1 = 15;
         public static final int kDebugMotor2 = 99;
@@ -40,6 +49,8 @@ public final class Constants {
         }
     }
 
+    public static final class Stopper {
+    }
     public static final class Intake {
         public static final double kIntakeForwardSpeed = -0.8;
         public static final double kIntakeReverseSpeed = 0.9;
