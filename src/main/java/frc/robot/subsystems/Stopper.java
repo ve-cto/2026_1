@@ -3,11 +3,14 @@ package frc.robot.subsystems;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
+import com.ctre.phoenix.motorcontrol.VictorSPXSimCollection;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.simulation.EncoderSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -25,7 +28,8 @@ public class Stopper extends SubsystemBase {
   private Queue<Double> mechanismPositionHistory = new ArrayBlockingQueue<>(3);
   private boolean switchTriggered = false;
   private double extendedPosition = -700;
-
+  private boolean hasHomed = false;
+  
   public Stopper() {
     m_motor = new WPI_VictorSPX(Constants.Hardware.kStopperId);
     kCANUtil.registerDevice("Stopper", Constants.Hardware.kStopperId, Constants.Hardware.DeviceType.VictorSPX, m_motor);
@@ -65,6 +69,7 @@ public class Stopper extends SubsystemBase {
   }
 
   public void reset() {
+    this.hasHomed = true;
     s_Encoder.reset();
     mechanismPIDController.reset();
   }
@@ -77,6 +82,14 @@ public class Stopper extends SubsystemBase {
     m_motor.stopMotor();
   }
 
+  public void homeExtend() {
+    if (!this.hasHomed) {
+      this.home();
+    } else {
+      this.extend();
+    }
+  }
+
   public Command stopCommand() {
     return runEnd(() -> this.stop(), ()-> this.coast());
   }
@@ -85,5 +98,8 @@ public class Stopper extends SubsystemBase {
   }
   public Command homeCommand() {
     return runEnd(() -> this.home(), ()-> this.coast());
+  }
+  public Command homeExtendCommand() {
+    return runEnd(() -> this.homeExtend(), () -> this.coast());
   }
 }

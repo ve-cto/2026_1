@@ -1,6 +1,9 @@
 package frc.robot.subsystems.util;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
 
@@ -17,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
+import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.NetworkTablesIO;
 
 
@@ -27,10 +31,17 @@ public class TrajectoryCalculator extends SubsystemBase {
     
     private final Pose2d blueHubPose = new Pose2d(4.65, 4, new Rotation2d());
     private final Pose2d redHubPose = new Pose2d(12, 4, new Rotation2d());
+
+    private final Pose2d blueFuelHigh = new Pose2d(new Translation2d(1, 6), new Rotation2d());
+    private final Pose2d blueFuelLow = new Pose2d(new Translation2d(1, 2), new Rotation2d());
+    private final Pose2d redFuelHigh = new Pose2d(new Translation2d(15, 6), new Rotation2d());
+    private final Pose2d redFuelLow = new Pose2d(new Translation2d(15, 2), new Rotation2d());
+
+    private Collection<Pose2d> redPoses = new ArrayList<>(); 
+    private Collection<Pose2d> bluePoses = new ArrayList<>(); 
+
     private double hubHeightMeters = 1.8288;
     private double hubHeightInches = 72;
-    private double robotVelX = 0;
-    private double robotVelY = 0;
 
     private SwerveDriveState driveState = new SwerveDriveState();
 
@@ -49,18 +60,18 @@ public class TrajectoryCalculator extends SubsystemBase {
         {1, 67},
         {2, 60},
         {3.5, 55},
-        {4.5, 459},
+        {4.5, 45},
         {5.5, 47},
         {6.5, 45},
     };
 
-    private double ballAirtimePairs[][] = {
-        {1, 0},
-        {2, 0},
-        {3.5, 0},
-        {4.5, 0},
-        {5.5, 0},
-        {6.5, 0},
+    private double ballAirtimePairs[][] = { // seconds
+        {1, 1},
+        {2, 1.1},
+        {3.5, 1.2},
+        {4.5, 1.3},
+        {5.5, 1.4},
+        {6.5, 1.5},
     };
 
     private InterpolatingDoubleTreeMap shooterSpeedTreeMap = new InterpolatingDoubleTreeMap();
@@ -81,23 +92,19 @@ public class TrajectoryCalculator extends SubsystemBase {
         for (int i = 0; i < ballAirtimePairs.length; i++) {
             ballAirtimeTreeMap.put(ballAirtimePairs[i][0], ballAirtimePairs[i][1]);
         }
+
+        this.redPoses.add(redFuelHigh);
+        this.redPoses.add(redFuelLow);
+        this.bluePoses.add(blueFuelHigh);
+        this.bluePoses.add(blueFuelLow);
     }
 
     @Override
-    public void periodic() {
-        
-    }
+    public void periodic() {}
 
     // public Command updateState(SwerveDriveState state) {
     //     return new InstantCommand(() -> this.driveState = state, this);
     // }
-
-    public void updateVel(double velx, double velY) {
-
-    }
-    public Command updateVelocities(DoubleSupplier velX, DoubleSupplier velY) {
-        return run(() -> this.updateVel(velX.getAsDouble(), velY.getAsDouble()));
-    }
 
     public DoubleSupplier getRequiredRobotAngleSOTM(SwerveDriveState state) {
         return () -> this.getRequiredSpeedsSOTM(state)[1];
@@ -111,6 +118,13 @@ public class TrajectoryCalculator extends SubsystemBase {
         return () -> this.getRequiredShooterSpeed(this.getRequiredSpeedsSOTM(state)[0]);
     }
 
+    public Supplier<Pose2d> getClosestAllianceFuel(Supplier<SwerveDriveState> state) {
+        return () -> {
+            Pose2d nearest = this.isRedAlliance ? state.get().Pose.nearest(redPoses) : state.get().Pose.nearest(bluePoses);
+            return nearest;
+        };
+    }
+
     // // https://blog.eeshwark.com/robotblog/shooting-on-the-fly
     // // https://blog.eeshwark.com/robotblog/shooting-on-the-fly-pt2
     // Note to me: i started looking at this and it is literally just vector math. All those questions where it's like a boat can go x speed, but there's a current going x speed in alpha direction. It's pretty much just that. It's HARD though. like, really hard.
@@ -121,7 +135,7 @@ public class TrajectoryCalculator extends SubsystemBase {
         
         double robotVelX = state.Speeds.vxMetersPerSecond;
         double robotVelY = state.Speeds.vyMetersPerSecond;
-        // convert velocity into robot centric
+        // convert velocity into field centric
         double velXField = (Math.cos(robotHeadingRadians) * robotVelX) - (Math.sin(robotHeadingRadians) * robotVelY);
         double velYField = (Math.sin(robotHeadingRadians) * robotVelX) + robotVelY * Math.cos(robotHeadingRadians);
         ntTrajCalcTable.putValue("velXField", NetworkTableValue.makeDouble(velXField));
@@ -369,42 +383,58 @@ public class TrajectoryCalculator extends SubsystemBase {
     // }
 
     public Translation2d getVirTarget(SwerveDriveState state, Pose2d target) {
-        Pose2d pose = networkTablesIO.getNetworkPose();
-        double tarX = target.getX() - pose.getX();
-        double tarY = target.getY() - pose.getY();
-        Translation2d tarPos = new Translation2d(tarX, tarY);
-    
-        double dist = tarPos.getNorm();
-        double idealSpeed = shooterSpeedTreeMap.get(dist); // This ideal speed needs to be the horizontal component of the balls travel. It gets hard because it obviously changes based on hood angle.
-        Translation2d tarVect = target.getTranslation().div(dist).times(idealSpeed);
-    
-        Translation2d robotVel = new Translation2d(this.robotVelX, this.robotVelY);
+        Pose2d pose = state.Pose;
+        // double tarX = target.getX() - pose.getX();
+        // double tarY = target.getY() - pose.getY();
+        // Translation2d tarPos = new Translation2d(tarX, tarY);
+        double realDistanceLength = target.getTranslation().minus(pose.getTranslation()).getNorm();
+        double robotRotation = pose.getRotation().getRadians();
+        double velXField = Math.cos(robotRotation) * state.Speeds.vxMetersPerSecond - Math.sin(robotRotation) * state.Speeds.vyMetersPerSecond;
 
-        Translation2d shotVec = tarVect.minus(robotVel);
-
-        double shotDist = shotVec.getNorm();
-        double shotAngle = shotVec.getAngle().getRadians();
+        double velYField = Math.sin(robotRotation) * state.Speeds.vxMetersPerSecond + Math.cos(robotRotation) * state.Speeds.vyMetersPerSecond;
+        velYField = -velYField;
+        velXField = -velXField;
+        // Translation2d robotVel = new Translation2d(this.robotVelX, this.robotVelY).times(1);
+        Translation2d robotVel = new Translation2d(velXField, velYField);
+        double airtime = ballAirtimeTreeMap.get(realDistanceLength);
+        // double dist = tarPos.getNorm();
+        // double idealSpeed = shooterSpeedTreeMap.get(dist); // This ideal speed needs to be the horizontal component of the balls travel. It gets hard because it obviously changes based on hood angle.
+        // Translation2d tarVect = target.getTranslation().div(dist).times(idealSpeed);
         
-        Translation2d targetCompensationOffset = robotVel.times(ballAirtimeTreeMap.get(dist));
+
+        // Translation2d shotVec = tarVect.minus(robotVel);
+
+        // double shotDist = shotVec.getNorm();
+        // double shotAngle = shotVec.getAngle().getRadians();
+        
+        Translation2d targetCompensationOffset = robotVel.times(airtime);
         Translation2d compensatedTargetLocation = target.getTranslation().plus(targetCompensationOffset);
-        return (dist > 1) ? compensatedTargetLocation : target.getTranslation();
+        return (realDistanceLength > 1) ? compensatedTargetLocation : target.getTranslation();
     }
    
-    public double[] getDistanceAngle(Pose2d target) {
-        Translation2d compensatedTarget = getVirTarget(null, target);
-        Pose2d pose = networkTablesIO.getNetworkPose();
-        double compensatedDistanceLength = compensatedTarget.minus(pose.getTranslation()).getNorm();
+    // public double[] getDistanceAngle(SwerveDriveState state, Pose2d target) {
+    //     Translation2d compensatedTarget = getVirTarget(state, target);
+    //     Pose2d pose = networkTablesIO.getNetworkPose();
+    //     double compensatedDistanceLength = compensatedTarget.minus(pose.getTranslation()).getNorm();
         
-        double robotAngleToTargetRads = Math.atan2(compensatedTarget.getY() - pose.getY(), compensatedTarget.getX() - pose.getX());
+    //     double robotAngleToTargetRads = Math.atan2(compensatedTarget.getY() - pose.getY(), compensatedTarget.getX() - pose.getX());
+    //     // SmartDashboard.putNumberArray("Pose/VirtualTarget", new double[] {compensatedTarget.getX(), compensatedTarget.getY(), 0.0});
+    //     networkTablesIO.putVirPose(new double[] {compensatedTarget.getX() - pose.getX(), compensatedTarget.getY() - pose.getY(), 0.0});
+    //     return new double[] {compensatedDistanceLength, robotAngleToTargetRads};
+    // }
 
-        return new double[] {compensatedDistanceLength, robotAngleToTargetRads};
-    }
+    // public double[] getHoodShooterAngle(SwerveDriveState state, Pose2d target) {
+    //     double[] distang = getDistanceAngle(state, target);
+    //     double shooterspeed = shooterSpeedTreeMap.get(distang[0]);
+    //     double hoodangl = hoodAngleTreeMap.get(distang[0]);
+    //     return new double[] {shooterspeed, hoodangl, distang[1]};
+    // }
 
-    public double[] getHoodShooterAngle(Pose2d target) {
-        double[] distang = getDistanceAngle(target);
-        double shooterspeed = shooterSpeedTreeMap.get(distang[0]);
-        double hoodangl = hoodAngleTreeMap.get(distang[0]);
-        return new double[] {shooterspeed, hoodangl, distang[1]};
+    public Object[] getHoodShooter(SwerveDriveState state, Pose2d target) {
+        Translation2d compensatedTargetLocation = getVirTarget(state, target);
+        double compensatedDistanceLength = compensatedTargetLocation.minus(state.Pose.getTranslation()).getNorm();
+        networkTablesIO.putVirPose(new double[] {compensatedTargetLocation.getX(), compensatedTargetLocation.getY(), 0.0});
+        return new Object[] {hoodAngleTreeMap.get(compensatedDistanceLength), shooterSpeedTreeMap.get(compensatedDistanceLength), compensatedTargetLocation};
     }
 
     public void updateAlliance() {

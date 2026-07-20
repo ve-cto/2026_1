@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Feeder;
 import frc.robot.subsystems.shooter.HoodedShooter;
@@ -56,11 +57,12 @@ public class ShootAtTarget extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    double[] data = trajcalc.getHoodShooterAngle(target);
-    shooter.runRPM(() -> data[0]);
-    // hood.runClosedLoopAngle(() -> data[1]);
+    this.target = targetSup.get();
+    Object[] data = trajcalc.getHoodShooter(drivetrain.getStateCopy(), target);
+    shooter.runRPM(() -> (Double) data[1]);
+    hood.runClosedLoopAngle(() -> (Double) data[0]);
     feeder.feed();
-    if (Math.abs(drivetrain.pointToPose(target, velx.getAsDouble(), vely.getAsDouble())) < ROTATION_DEADBAND && shooter.isAtSetpoint()) {
+    if (Math.abs(drivetrain.pointToPose(new Pose2d((Translation2d) data[2], new Rotation2d()), velx.getAsDouble(), vely.getAsDouble())) < ROTATION_DEADBAND && shooter.isAtSetpoint()) {
       stopper.home();
       feeder.run(0.9);
     } else {

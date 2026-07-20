@@ -13,9 +13,11 @@ import edu.wpi.first.math.geometry.Rectangle2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.networktables.BooleanSubscriber;
+import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.PubSubOption;
 // import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 // import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -44,6 +46,7 @@ public class NetworkTablesIO extends SubsystemBase {
   // private final NetworkTable smartDashboardTable = ntInst.getTable("SmartDashboard");
   private final DoubleArraySubscriber poseSubscriber = drivetrainTable.getDoubleArrayTopic("robotPose").subscribe(new double[] {0.0, 0.0, 0.0});
   private final BooleanSubscriber allianceSubscriber = fmsTable.getBooleanTopic("IsRedAlliance").subscribe(isRedAlliance);
+  private final DoubleArrayPublisher virPublisher = drivetrainTable.getDoubleArrayTopic("virPose").publish();
 
   private final DecimalFormat oneDP = new DecimalFormat("#.#");
   // private final DecimalFormat twoDP = new DecimalFormat("#.##");
@@ -140,6 +143,10 @@ public class NetworkTablesIO extends SubsystemBase {
 
   public boolean getAlliance() {
     return this.isRedAlliance;
+  }
+
+  public void putVirPose(double[] pose) {
+    virPublisher.set(pose);
   }
 
   public Pose2d getOwnHubPose() {

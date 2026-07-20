@@ -193,9 +193,6 @@ public class RobotContainer {
                     .withRotationalRate(-driveJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
         );
-        m_trajectoryCalculator.setDefaultCommand(
-            m_trajectoryCalculator.updateVelocities(() -> drivetrain.getState().Speeds.vxMetersPerSecond, () -> drivetrain.getState().Speeds.vyMetersPerSecond)
-        );
         m_intake.setDefaultCommand(
             m_intake.coastCommand()
         );
@@ -214,7 +211,7 @@ public class RobotContainer {
             m_hood.brakeCommand()
         );
         m_stopper.setDefaultCommand(
-            m_stopper.stopCommand()
+            m_stopper.homeExtendCommand()
         );
         
         // Default to displaying the specific modes' pattern (disconn, disabl, auto, teleop)
@@ -299,9 +296,22 @@ public class RobotContainer {
         // m_hood.setDefaultCommand(m_hood.holdCommand());
 
         // TODO:
-        driveJoystick.y().whileTrue(
+        driveJoystick.y().and(() -> m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
             new ShootAtTarget(
                 () -> m_networkTablesIO.getOwnHubPose(), 
+                () -> -driveJoystick.getLeftY() * MaxSpeed, 
+                () -> -driveJoystick.getLeftX() * MaxSpeed, 
+                m_shooter, 
+                m_hood, 
+                drivetrain, 
+                m_feeder, 
+                m_stopper,
+                m_trajectoryCalculator
+            )
+        );
+        driveJoystick.y().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
+            new ShootAtTarget(
+                m_trajectoryCalculator.getClosestAllianceFuel(() -> drivetrain.getStateCopy()), 
                 () -> -driveJoystick.getLeftY() * MaxSpeed, 
                 () -> -driveJoystick.getLeftX() * MaxSpeed, 
                 m_shooter, 
