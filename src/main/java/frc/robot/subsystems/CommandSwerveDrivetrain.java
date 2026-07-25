@@ -2,6 +2,7 @@ package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.*;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.SignalLogger;
@@ -515,7 +516,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         Rotation2d targetRotationRelative = new Rotation2d(Math.atan2(-targetPoseRelative.getY(), -targetPoseRelative.getX()));
         // Rotation2d rotError = curPose.getRotation().minus(targetRotationRelative);
         // SmartDashboard.putNumber("rotError", rotError.getDegrees());
-        SmartDashboard.putNumber("targetRotationRel", targetRotationRelative.getDegrees());
+        // SmartDashboard.putNumber("targetRotationRel", targetRotationRelative.getDegrees());
         this.setControl(
             point.withVelocityX(velX)
             .withVelocityY(velY)
@@ -529,7 +530,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         offset = Math.toRadians(normalizeDegrees(offset));
         // double offset2 = Math.toDegrees(curPose.getRotation().getRadians())-offset;
         // SmartDashboard.putNumber("currposeradians", curPose.getRotation().getRadians());
-        SmartDashboard.putNumber("pointoffset", offset);
+        // SmartDashboard.putNumber("pointoffset", offset);
         return offset;
     }
 
@@ -537,9 +538,16 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         Pose2d curPose = this.getState().Pose;
         Translation2d targetPoseRelative = target.minus(curPose.getTranslation());
         Rotation2d targetRotationRelative = new Rotation2d(Math.atan2(-targetPoseRelative.getY(), -targetPoseRelative.getX()));
+        Optional<Alliance> a = DriverStation.getAlliance();
+        if (a.isPresent()) {
+            if (a.get() == Alliance.Blue) {
+                targetRotationRelative = targetRotationRelative.rotateBy(Rotation2d.k180deg);
+            }
+        }
+
         // Rotation2d rotError = curPose.getRotation().minus(targetRotationRelative);
         // SmartDashboard.putNumber("rotError", rotError.getDegrees());
-        SmartDashboard.putNumber("targetRotationRel", targetRotationRelative.getDegrees());
+        // SmartDashboard.putNumber("targetRotationRel", targetRotationRelative.getDegrees());
         // double offset = targetRotationRelative.getRadians() - curPose.getRotation().getRadians();
         // double offset = Math.abs(targetRotationRelative.getRadians());
         // double offset = Math.toDegrees(Math.acos((-targetPoseRelative.getX()*curPose.getRotation().getSin() - targetPoseRelative.getY()*curPose.getRotation().getCos()) / targetPoseRelative.getNorm()));
@@ -548,7 +556,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         offset = Math.toRadians(normalizeDegrees(offset));
         // double offset2 = Math.toDegrees(curPose.getRotation().getRadians())-offset;
         // SmartDashboard.putNumber("currposeradians", curPose.getRotation().getRadians());
-        SmartDashboard.putNumber("pointoffset", offset);
+        // SmartDashboard.putNumber("pointoffset", offset);
         this.setControl(
             point.withVelocityX(velX)
             .withVelocityY(velY)

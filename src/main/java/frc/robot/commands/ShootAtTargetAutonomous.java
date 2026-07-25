@@ -67,8 +67,7 @@ public class ShootAtTargetAutonomous extends Command {
     hood.runClosedLoopAngle(() -> (Double) data[0]);
     // feeder.feed();
     if (DriverStation.isAutonomousEnabled()) {
-      double[] p = drivetrain.calculatePointOffsetRotationRequirement(target.getTranslation());
-      SmartDashboard.putNumber("!AAA", p[0]);
+      double[] p = drivetrain.calculatePointOffsetRotationRequirement((Translation2d) data[2]);
       PPHolonomicDriveController.overrideRotationFeedback(
         () -> p[0]
       );
@@ -90,6 +89,7 @@ public class ShootAtTargetAutonomous extends Command {
     hood.stopreset();
     feeder.coast();
     stopper.extend();
+    trajcalc.clearVirTarget();
     PPHolonomicDriveController.clearRotationFeedbackOverride();
   }
 

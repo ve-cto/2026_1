@@ -72,17 +72,17 @@ public class Shooter extends SubsystemBase {
     // kPidController = new PIDController(0.0001, 0.0008, 0.0);
     kPidController = new PIDController(0, 0, 0);
 
-    SmartDashboard.putNumber("kp", 0.2);
-    SmartDashboard.putNumber("ki", 0.0);
-    SmartDashboard.putNumber("kd", 0);
-    SmartDashboard.putNumber("ffslope", 0.00195);
-    SmartDashboard.putNumber("ffoffset", 0);
-    SmartDashboard.putNumber("presetspeed", 3200);
+    SmartDashboard.putNumber("Shooter/kp", 0.2);
+    SmartDashboard.putNumber("Shooter/ki", 0.0);
+    SmartDashboard.putNumber("Shooter/kd", 0);
+    SmartDashboard.putNumber("Shooter/ffslope", 0.00195);
+    SmartDashboard.putNumber("Shooter/ffoffset", 0);
+    SmartDashboard.putNumber("Shooter/presetspeed", 3200);
 
     if (RobotBase.isSimulation()) {
-      SmartDashboard.putNumber("kp", 0.5);
-      SmartDashboard.putNumber("ki", 0.5);
-      SmartDashboard.putNumber("kd", 0);
+      SmartDashboard.putNumber("Shooter/kp", 0.5);
+      SmartDashboard.putNumber("Shooter/ki", 0.5);
+      SmartDashboard.putNumber("Shooter/kd", 0);
     }
     this.updateMotorConfigs();
   }
@@ -112,18 +112,18 @@ public class Shooter extends SubsystemBase {
     mechanismVelocityAvHistory.add(this .mechanismVelocityAv);
     this.mechanismVelocityHistoryAv = mechanismVelocityAvHistory.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
 
-    SmartDashboard.putBoolean("isAtSetpoint", isAtSetpoint());
-    SmartDashboard.putNumber("Setpoint", this.setpoint);
-    SmartDashboard.putNumber("shooterLRPM", this.shooterLRPM);
-    SmartDashboard.putNumber("shooterRRPM", this.shooterRRPM);
-    SmartDashboard.putNumber("mechanismVelocityAv", this.mechanismVelocityAv);
-    SmartDashboard.putNumber("motorsVelocityAv", this.motorsVelocityAv);
-    SmartDashboard.putNumber("ShooterOutput", this.closedLoopCalculatedOutput);
-    this.kp = SmartDashboard.getNumber("kp", 0);
-    this.ki = SmartDashboard.getNumber("ki", 0);
-    this.kd = SmartDashboard.getNumber("kd", 0);
-    this.ffslope = SmartDashboard.getNumber("ffslope", 0);
-    this.ffoffset = SmartDashboard.getNumber("ffoffset", 0);
+    SmartDashboard.putBoolean("Shooter/isAtSetpoint", isAtSetpoint());
+    SmartDashboard.putNumber("Shooter/Setpoint", this.setpoint);
+    SmartDashboard.putNumber("Shooter/shooterLRPM", this.shooterLRPM);
+    SmartDashboard.putNumber("Shooter/shooterRRPM", this.shooterRRPM);
+    SmartDashboard.putNumber("Shooter/mechanismVelocityAv", this.mechanismVelocityAv);
+    SmartDashboard.putNumber("Shooter/motorsVelocityAv", this.motorsVelocityAv);
+    SmartDashboard.putNumber("Shooter/ShooterOutput", this.closedLoopCalculatedOutput);
+    this.kp = SmartDashboard.getNumber("Shooter/kp", 0);
+    this.ki = SmartDashboard.getNumber("Shooter/ki", 0);
+    this.kd = SmartDashboard.getNumber("Shooter/kd", 0);
+    this.ffslope = SmartDashboard.getNumber("Shooter/ffslope", 0);
+    this.ffoffset = SmartDashboard.getNumber("Shooter/ffoffset", 0);
     
     this.kPidController.setPID(this.kp, this.ki, this.kd);
   }
@@ -192,9 +192,9 @@ public class Shooter extends SubsystemBase {
   }
 
   public void updateMotorConfigs() {
-    slot0Configs.kP = SmartDashboard.getNumber("kp", 0);
-    slot0Configs.kI = SmartDashboard.getNumber("ki", 0);
-    slot0Configs.kD = SmartDashboard.getNumber("kd", 0);
+    slot0Configs.kP = SmartDashboard.getNumber("Shooter/kp", 0);
+    slot0Configs.kI = SmartDashboard.getNumber("Shooter/ki", 0);
+    slot0Configs.kD = SmartDashboard.getNumber("Shooter/kd", 0);
     m_shooterL.getConfigurator().apply(slot0Configs);
     m_shooterR.getConfigurator().apply(slot0Configs);
   }
@@ -266,8 +266,18 @@ public class Shooter extends SubsystemBase {
    * Run the shooter with a given percentage of max output.
    * (-1, 1), where -1 is a backwards motion of the shooter.
    */
-  public Command runPercentageCommand(double percentage) {
-    return this.startEnd(() -> this.run(percentage), () -> this.coast());
+  public Command runPercentageCommand(DoubleSupplier percentage, double min, double max) {
+    return this.runEnd(() -> 
+      {
+        double r = min + percentage.getAsDouble() * (max - min);
+        SmartDashboard.putNumber("AAAAA", r);
+        this.runRPM(() -> r);
+      }
+    , () -> {
+        this.coast();
+        this.reset();
+      }
+    );
   }
 
   /*
@@ -287,7 +297,7 @@ public class Shooter extends SubsystemBase {
   public Command runDashboard() {
     return new FunctionalCommand(
       () -> reset(),                // initialize
-      () -> runRPM(() -> SmartDashboard.getNumber("presetspeed", 0)),                    // execute
+      () -> runRPM(() -> SmartDashboard.getNumber("Shooter/presetspeed", 0)),                    // execute
       interrupted -> reset(),                      // end (with interrupted flag)
       () -> false,                                 // isFinished (never finishes on its own)
       this                                         // requirements

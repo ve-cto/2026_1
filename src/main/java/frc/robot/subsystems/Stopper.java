@@ -2,6 +2,7 @@ package frc.robot.subsystems;
 
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.function.BooleanSupplier;
 
 import com.ctre.phoenix.motorcontrol.VictorSPXSimCollection;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
@@ -14,6 +15,7 @@ import edu.wpi.first.wpilibj.simulation.EncoderSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.subsystems.util.CANUtil;
 public class Stopper extends SubsystemBase {
@@ -39,7 +41,7 @@ public class Stopper extends SubsystemBase {
   @Override
   public void periodic() {
     this.mechanismPosition = s_Encoder.getDistance();
-    SmartDashboard.putNumber("stopperDist", this.mechanismPosition);
+    SmartDashboard.putNumber("Stopper/stopperDist", this.mechanismPosition);
     this.switchTriggered = s_switch.get();
   }
 
@@ -90,6 +92,10 @@ public class Stopper extends SubsystemBase {
     } else {
       this.extend();
     }
+  }
+
+  public Trigger isHomed() {
+    return new Trigger(() -> this.switchTriggered);
   }
 
   public Command stopCommand() {

@@ -49,7 +49,7 @@ public class Feeder extends SubsystemBase {
     //   SmartDashboard.putNumber("Feeder Setpoint", this.setpoint);
     //   SmartDashboard.putNumber("Feeder Output", this.closedLoopCalculatedOutput);
     // }
-    SmartDashboard.putNumber("feederOutput", this.output);
+    SmartDashboard.putNumber("Feeder/feederOutput", this.output);
   }
 
   public void run(double speed) {

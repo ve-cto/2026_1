@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
@@ -8,6 +9,8 @@ import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.simulation.PhotonCameraSim;
 import org.photonvision.simulation.SimCameraProperties;
 import org.photonvision.simulation.VisionSystemSim;
+
+import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -18,8 +21,10 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 
 public class Vision extends SubsystemBase {
@@ -51,8 +56,9 @@ public class Vision extends SubsystemBase {
     // throttle addVisionMeasurement updates
     private double m_lastVisionMeasurementUpdate = 0.0;
     private static final double kVisionMeasurementMinDt = 0.2; // 200ms
-    
-    Pose2d drivetrainPose = new Pose2d();
+
+    public boolean visionEnabled = true;
+    public Pose2d drivetrainPose = new Pose2d();
 
     /*
      * Create a new vision instance with our drivetrain and networktables.
@@ -84,14 +90,14 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
-        this.drivetrainPose = m_networkTablesIO.getNetworkPose();
+        SmartDashboard.putBoolean("Vision/Vision Enabled", visionEnabled);
     }   
 
     /*
      * Feed estimated poses to the drivetrain every 200ms
      * Only runs when out of simulation and camera is connected
      */
-    public void addVisionMeasurement() {
+    public void addVisionMeasurement(Supplier<SwerveDriveState> state) {
         // only run if we aren't simulating
         if (RobotBase.isReal()) {
             // make sure that the camera is connected and thus would be producing valid results
@@ -102,7 +108,7 @@ public class Vision extends SubsystemBase {
                     return;
                 }
 
-                poseEstimator.setReferencePose(this.drivetrainPose);
+                poseEstimator.setReferencePose(state.get().Pose);
                 
                 for (var result : this.cameraAlpha.getAllUnreadResults()) {
                     poseEstimate = poseEstimator.estimateCoprocMultiTagPose(result);
@@ -116,6 +122,8 @@ public class Vision extends SubsystemBase {
                     }
                 }
             }
+        } else {
+            this.drivetrainPose = state.get().Pose; // update pose for camera simulation
         }
     }
 
@@ -199,8 +207,16 @@ public class Vision extends SubsystemBase {
         return new double[] {roll, pitch, yaw};
     }
 
-    public Command addVisionMeasurementCommand() {
-        return this.run(() -> this.addVisionMeasurement());
+    public Command addVisionMeasurementCommand(Supplier<SwerveDriveState> state) {
+        return this.run(() -> this.addVisionMeasurement(state));
+    }
+
+    public Command setVisionEnabled(boolean isEnabled) {
+        return this.runOnce(() -> this.visionEnabled = isEnabled);
+    }
+
+    public Trigger isVisionEnabled() {
+        return new Trigger(() -> this.visionEnabled);
     }
 
     /*
@@ -215,7 +231,7 @@ public class Vision extends SubsystemBase {
         }
 
         // simulate cameras
-        // visionSim.update(this.drivetrainPose);
-        // m_lastVisionSimUpdate = now;
+        visionSim.update(this.drivetrainPose);
+        m_lastVisionSimUpdate = now;
     }
 }

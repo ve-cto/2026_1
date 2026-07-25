@@ -18,13 +18,18 @@ import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.PubSubOption;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 // import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 // import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 
 public class NetworkTablesIO extends SubsystemBase {
@@ -58,8 +63,17 @@ public class NetworkTablesIO extends SubsystemBase {
   // private final Alert AlertDebugModeEnabled = new Alert("Debug Mode is enabled, some functions may be inoperable or inaccessible during this time until it is disabled. Ask the lead programmer or technician for assistance in using Debug Mode.", AlertType.kWarning);
   private final SendableChooser<Boolean> debugChooser = new SendableChooser<>();
 
+  private CommandXboxController primaryJoystick;
+  private CommandXboxController secondaryJoystick;
+  private boolean secondaryJoystickEnabled = false;
+  private final Alert alertPrimaryJoystickUnplugged = new Alert("Primary controller is disconnected from the DriverStation.", AlertType.kError);
+  private final Alert alertSecondaryJoystickUnplugged = new Alert("Secondary controller is disconnected from the DriverStation.", AlertType.kWarning);
+
   /** Creates a new NetworkTablesIO. */
-  public NetworkTablesIO() {}
+  public NetworkTablesIO(CommandXboxController primaryJoystick, CommandXboxController secondaryJoystick) {
+    this.primaryJoystick = primaryJoystick;
+    this.secondaryJoystick = secondaryJoystick;
+  }
 
   @Override
   public void periodic() {
@@ -71,7 +85,7 @@ public class NetworkTablesIO extends SubsystemBase {
     this.isRedAlliance = allianceSubscriber.get();
     
     // If the match time is -1, IE, it doesn't exist, replace with 0.
-    SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime() == -1 ? 0 : Double.valueOf(oneDP.format(DriverStation.getMatchTime())));
+    SmartDashboard.putNumber("Match/Match Time", DriverStation.getMatchTime() == -1 ? 0 : Double.valueOf(oneDP.format(DriverStation.getMatchTime())));
 
     if (redAllianceZoneRect.contains(getNetworkPose().getTranslation())) {
       this.isInRedAllianceZone = true;
@@ -97,12 +111,15 @@ public class NetworkTablesIO extends SubsystemBase {
       this.isInCenterField = false;
     }
 
+    alertPrimaryJoystickUnplugged.set(primaryJoystick.getHID().getAxisCount() == 6 ? false : true);
+    alertSecondaryJoystickUnplugged.set(secondaryJoystick.getHID().getAxisCount() == 6 ? false : true);
 
-  
-    SmartDashboard.putBoolean("isInBlueAllianceZone", isInBlueAllianceZone);
-    SmartDashboard.putBoolean("isInRedAllianceZone", isInRedAllianceZone);
-    SmartDashboard.putBoolean("isInOwnAllianceZone", this.isInOwnAllianceZone);
-    SmartDashboard.putBoolean("isInCenterField", this.isInCenterField);
+    SmartDashboard.putBoolean("Vision/isInBlueAllianceZone", isInBlueAllianceZone);
+    SmartDashboard.putBoolean("Vision/isInRedAllianceZone", isInRedAllianceZone);
+    SmartDashboard.putBoolean("Vision/isInOwnAllianceZone", this.isInOwnAllianceZone);
+    SmartDashboard.putBoolean("Vision/isInCenterField", this.isInCenterField);
+    SmartDashboard.putBoolean("Match/isHubActive", this.isHubActive());
+    SmartDashboard.putBoolean("Match/Secondary Overrides Enabled", this.secondaryJoystickEnabled);
   }
 
   public boolean getTestModeEnabled() {
@@ -240,4 +257,21 @@ public class NetworkTablesIO extends SubsystemBase {
       return true;
     }
   }
+  
+  public Trigger hubActive() {
+    return new Trigger(() -> isHubActive());
+  }
+
+  public void setSecondaryJoystickEnabled(boolean t) {
+    this.secondaryJoystickEnabled = t;
+  }
+
+  public Command setSecondaryJoystickEnabled(BooleanSupplier t) {
+    return this.runOnce(() -> this.setSecondaryJoystickEnabled(t.getAsBoolean()));
+  }
+
+  public Trigger secondaryJoystickEnabled() {
+    return new Trigger(() -> this.secondaryJoystickEnabled);
+  }
 }
+

@@ -8,6 +8,7 @@ package frc.robot;
 
 // Swerve
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.signals.StatusLedWhenActiveValue;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import edu.wpi.first.wpilibj.Alert;
@@ -37,12 +38,14 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 // Commands
 // import frc.robot.commands.drive.DriveToApriltag;
 // import frc.robot.commands.drive.DriveToPose;
 import frc.robot.commands.drive.PointToHub;
 import frc.robot.commands.drive.PointToAngle;
 import frc.robot.subsystems.Stopper;
+import frc.robot.Constants.Led.StatusList;
 // import frc.robot.commands.drive.PointToPose;
 import frc.robot.commands.RunDebugMotors;
 import frc.robot.commands.ShootAtTarget;
@@ -82,9 +85,14 @@ public class RobotContainer {
     private final Telemetry logger = new Telemetry(MaxSpeed);
     // #endregion Swerve setup
     
+    // private final CommandPS4Controller primaryJoystick = new CommandXboxController(Constants.Controller.kDriverControllerPort);
+    // private final CommandPS4Controller secondaryJoystick = new CommandXboxController(Constants.Controller.kOperatorControllerPort);
+    private final CommandXboxController primaryJoystick = new CommandXboxController(Constants.Controller.kDriverControllerPort);
+    private final CommandXboxController secondaryJoystick = new CommandXboxController(Constants.Controller.kOperatorControllerPort);
+    
     // #region Subsystems
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-    public final NetworkTablesIO m_networkTablesIO = new NetworkTablesIO();
+    public final NetworkTablesIO m_networkTablesIO = new NetworkTablesIO(primaryJoystick, secondaryJoystick);
     public final Vision m_vision = new Vision(drivetrain, m_networkTablesIO);
     private final Intake m_intake = new Intake();
     private final Arm m_arm = new Arm();
@@ -97,20 +105,9 @@ public class RobotContainer {
     private final TrajectoryCalculator m_trajectoryCalculator = new TrajectoryCalculator(m_networkTablesIO);
     // #endregion Subsystems
 
-    // #region Controllers
-    // private final CommandPS4Controller driveJoystick = new CommandXboxController(Constants.Controller.kDriverControllerPort);
-    // private final CommandPS4Controller operatorJoystick = new CommandXboxController(Constants.Controller.kOperatorControllerPort);
-    private final CommandXboxController driveJoystick = new CommandXboxController(Constants.Controller.kDriverControllerPort);
-    private final CommandXboxController operatorJoystick = new CommandXboxController(Constants.Controller.kOperatorControllerPort);
-    // #endregion Controllers
-
     private final SendableChooser<Command> autoChooser;
-    
-    // private final Alert alertJoystickUnplugged = new Alert("", AlertType.kWarning);
-    private final Alert alertEstopped = new Alert("Robot has been EStopped and requires a restart or redeploy to resume operation.", AlertType.kError);
 
-    // private final Trigger unplugged = new Trigger(() -> !driveJoystick.isConnected());
-    // private final Trigger plugged = new Trigger(() -> driveJoystick.isConnected());
+    private final Alert alertEstopped = new Alert("Robot has been EStopped and requires a restart or redeploy to resume operation.", AlertType.kError);
 
     public RobotContainer() {
         NamedCommands.registerCommand("ExtendIntake", m_arm.extendIntakeCommand());
@@ -145,10 +142,10 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
-        // #region Swerve Setup
+        // #region Misc
         // Point the modules towards the direction of the left stick, without driving the robot. Note that this does not get updated while holding, only on initialize. (They aren't double suppliers)
-        // driveJoystick.triangle().whileTrue(drivetrain.applyRequest(() ->
-        //     point.withModuleDirection(new Rotation2d(-driveJoystick.getLeftY(), -driveJoystick.getLeftX()))
+        // primaryJoystick.triangle().whileTrue(drivetrain.applyRequest(() ->
+        //     point.withModuleDirection(new Rotation2d(-primaryJoystick.getLeftY(), -primaryJoystick.getLeftX()))
         // ));
 
         // Make the drivetrain idle when robot is disabled. (note that this is called only once)
@@ -166,41 +163,32 @@ public class RobotContainer {
 
         // Run SysId routines when holding back/start and X/Y.
         // Note that each routine should be run exactly once in a single log.
-        // driveJoystick.back().and(driveJoystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
-        // driveJoystick.back().and(driveJoystick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
-        // driveJoystick.start().and(driveJoystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
-        // driveJoystick.start().and(driveJoystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
-
-        // Reset the field-centric heading on button press. Note that this has limited effect during the actual game, as m_vision measurements will override it.
-        // driveJoystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
-        driveJoystick.rightBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
+        // primaryJoystick.back().and(primaryJoystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
+        // primaryJoystick.back().and(primaryJoystick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
+        // primaryJoystick.start().and(primaryJoystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
+        // primaryJoystick.start().and(primaryJoystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
         // Update the robot's odometry. 
         drivetrain.registerTelemetry(logger::telemeterize);
-        // #endregion Swerve
 
         // Drive robot-centric instead of field-centric while held.
-        // driveJoystick.leftBumper().whileTrue(
+        // primaryJoystick.leftBumper().whileTrue(
         //     drivetrain.applyRequest(() ->
-        //         driveRobotCentric.withVelocityX(-driveJoystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-        //             .withVelocityY(-driveJoystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-        //             .withRotationalRate(-driveJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+        //         driveRobotCentric.withVelocityX(-primaryJoystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+        //             .withVelocityY(-primaryJoystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+        //             .withRotationalRate(-primaryJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
         //     )
         // );
         
         // Brake while holding. When the robot brakes, the four drive motors stop and the modules point towards the center of the robot.
-        // driveJoystick.rightBumper().whileTrue(drivetrain.applyRequest(() -> brake));
-        // driveJoystick.R1().whileTrue(drivetrain.applyRequest(() -> brake));
-
-        // When we enable test mode, update the subsystem PID configs (kp ki kd)
-        RobotModeTriggers.test().whileTrue(m_shooter.updateMotorConfigsCommand().alongWith(m_hood.updateMotorConfigsCommand()));
-        RobotModeTriggers.autonomous().or(RobotModeTriggers.teleop().or(RobotModeTriggers.test())).whileTrue(m_trajectoryCalculator.updateAllianceCommand());
-
+        // primaryJoystick.rightBumper().whileTrue(drivetrain.applyRequest(() -> brake));
+        // primaryJoystick.R1().whileTrue(drivetrain.applyRequest(() -> brake));
+        // #endregion Misc
         drivetrain.setDefaultCommand(
             drivetrain.applyRequest(() ->
-                driveFieldCentric.withVelocityX(-driveJoystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-driveJoystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                    .withRotationalRate(-driveJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+                driveFieldCentric.withVelocityX(-primaryJoystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+                    .withVelocityY(-primaryJoystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+                    .withRotationalRate(-primaryJoystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
         );
         m_intake.setDefaultCommand(
@@ -210,7 +198,6 @@ public class RobotContainer {
             m_arm.coastCommand()
         );
         m_feeder.setDefaultCommand(
-            // m_feeder.feedCommand(-0.6)
             m_feeder.coastCommand()
         );
         m_shooter.setDefaultCommand(
@@ -218,101 +205,69 @@ public class RobotContainer {
             // m_shooter.brakeCommand()
         );
         m_hood.setDefaultCommand(
-            m_hood.brakeCommand()
+            m_hood.homeCommand()
         );
         m_stopper.setDefaultCommand(
             m_stopper.homeExtendCommand()
-            // m_stopper.homeCommand()
         );
-        
         // Default to displaying the specific modes' pattern (disconn, disabl, auto, teleop)
         m_led.setDefaultCommand(
             m_led.handleDefault().ignoringDisable(true)
         );
 
-        // ---------------------------------------
+        // --------------------------------------------------------------------------------------------------------------------------------
+        // When we enable test mode, update the subsystem PID configs (kp ki kd)
+    { 
+        RobotModeTriggers.test().whileTrue(m_shooter.updateMotorConfigsCommand().alongWith(m_hood.updateMotorConfigsCommand()));
+        RobotModeTriggers.autonomous().or(RobotModeTriggers.teleop().or(RobotModeTriggers.test())).onChange(m_trajectoryCalculator.updateAllianceCommand().ignoringDisable(true));
+        // If the robot is ESTOPPED, flash and alert
+        RobotModeTriggers.disabled().and(() -> DriverStation.isEStopped()).whileTrue(m_led.estop().ignoringDisable(true));
+        RobotModeTriggers.disabled().and(() -> DriverStation.isEStopped()).onTrue(Commands.runOnce(() -> alertEstopped.set(true)).ignoringDisable(true));
+    }
+        
+        // Reset the field-centric heading on button press. Note that this has limited effect during the actual game, as m_vision measurements will override it.
+        primaryJoystick.povLeft().and(primaryJoystick.rightStick()).onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
+        // Disable vision processing for this match.
+        primaryJoystick.povDown().and(primaryJoystick.rightStick()).whileTrue(
+          m_vision.setVisionEnabled(false)  
+        );
+        // Re-enable vision processing for this match.
+        primaryJoystick.povUp().and(primaryJoystick.rightStick()).whileTrue(
+            m_vision.setVisionEnabled(true)
+        );
+        RobotModeTriggers.disabled().negate().and(m_vision.isVisionEnabled()).whileTrue( 
+            m_vision.addVisionMeasurementCommand(() -> drivetrain.getStateCopy())
+        );
 
-        driveJoystick.leftBumper().whileTrue(
+        // --------------------------------------------------------------------------------------------------------------------------------
+    
+        primaryJoystick.rightBumper().whileTrue(
             m_intake.runIntakeCommand()
         );
 
-        // driveJoystick.a().whileTrue(
-        //     m_feeder.feedCommand(0.95)
-        // );
-
-        // driveJoystick.povLeft().and(m_shooter.atSetpoint()).whileTrue(
-        //     m_feeder.feedCommand(0.95).alongWith(m_intake.runIntakeCommand())
-        // );
-        // driveJoystick.povLeft().and(m_shooter.atSetpoint()).negate().whileTrue(
-        //     m_feeder.feedCommand(-0.3) // If we aren't ready to shoot, try to move balls back to stop them from entering the shooter.
-        // );
-        // driveJoystick.povRight().and(m_shooter.atSetpoint()).whileTrue(
-        //     m_feeder.feedCommand(0.95).alongWith(m_intake.runIntakeCommand())
-        // );
-        // driveJoystick.povRight().and(m_shooter.atSetpoint()).negate().whileTrue(
-        //     m_feeder.feedCommand(-0.3) // If we aren't ready to shoot, try to move balls back to stop them from entering the shooter.
-        // );
-        // // driveJoystick.povLeft().whileTrue(
-        // //     m_shooter.runRPMCommand(3000).alongWith(drivetrain.pointToHubCommand(m_networkTablesIO.getAlliance(), () -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, m_networkTablesIO))
-        // // );
-        // driveJoystick.povRight().whileTrue(
-        //     m_shooter.runRPMCommand(3500)
-        // );
-
-        // driveJoystick.povLeft().whileTrue(
-        //     m_shooter.runRPMCommand(3500).alongWith(new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO)).alongWith(m_feeder.feedCommand(0.8)).alongWith(m_intake.runIntakeCommand())
-        // );
-
-        driveJoystick.povDown().whileTrue(
+        primaryJoystick.leftTrigger().whileTrue(
             m_arm.moveArmCommand(-0.7)
         );
 
-        driveJoystick.povUp().whileTrue(
+        primaryJoystick.leftBumper().whileTrue(
             m_arm.moveArmCommand(0.9)
         );
 
-        driveJoystick.povLeft().whileTrue(
-            m_stopper.homeCommand()
-        );
-
-        driveJoystick.povRight().whileTrue(
-            m_stopper.extendCommand()
-        );
-
-        // driveJoystick.a().whileTrue(
-        //     m_feeder.feedCommand()
+        // primaryJoystick.povLeft().whileTrue(
+        //     m_stopper.homeCommand()
         // );
-
-        // driveJoystick.b().whileTrue(
-        //     m_shooter.runRPMCommand(
-        //         () -> 3000
-        //     )
+        // primaryJoystick.povRight().whileTrue(
+        //     m_stopper.extendCommand()
         // );
+        // primaryJoystick.b().whileTrue(m_shooter.runDashboard());
+        // primaryJoystick.a().whileTrue(m_hood.gotoDashboard());
+        // primaryJoystick.x().whileTrue(m_hood.homeCommand());
 
-        
-
-        // driveJoystick.b().whileTrue(m_shooter.runDashboard());
-        // driveJoystick.y().whileTrue(m_shooter.runRPMCommand(3500));
-        // driveJoystick.b().whileTrue(m_shooter.runRPMCommand(4000));
-        
-        // driveJoystick.y().whileTrue(m_hood.run(() -> m_hood.run(0.5)));
-        // driveJoystick.b().whileTrue(m_hood.run(() -> m_hood.run(-0.5)));
-        // driveJoystick.y().whileTrue(m_hood.runCommand(-1.0));
-        // driveJoystick.y().whileTrue(m_hood.runSetpointPercentageCommand(0.8));
-        // driveJoystick.x().whileTrue(m_hood.homeInCommand());
-        // driveJoystick.a().whileTrue(m_hood.gotoDashboard());
-        // driveJoystick.y().whileTrue(m_hood.runCommand(-1.0));
-        // driveJoystick.x().whileTrue(m_hood.homeCommand());
-        // driveJoystick.a().whileTrue(m_hood.resetHomeCommand());
-        // m_hood.setDefaultCommand(m_hood.holdCommand());
-
-        // TODO:
-        // driveJoystick.y().and(() -> m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
-        driveJoystick.y().whileTrue(
+        primaryJoystick.rightTrigger().and(() -> m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
             new ShootAtTarget(
                 () -> m_networkTablesIO.getOwnHubPose(), 
-                () -> -driveJoystick.getLeftY() * MaxSpeed, 
-                () -> -driveJoystick.getLeftX() * MaxSpeed, 
+                () -> -primaryJoystick.getLeftY() * MaxSpeed, 
+                () -> -primaryJoystick.getLeftX() * MaxSpeed, 
                 m_shooter, 
                 m_hood, 
                 drivetrain, 
@@ -320,111 +275,117 @@ public class RobotContainer {
                 m_stopper,
                 m_trajectoryCalculator
             )
+            // .alongWith(
+            //     Commands.runEnd(
+            //         () -> primaryJoystick.setRumble(RumbleType.kBothRumble, 0.5),
+            //         () -> primaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
+            //     )
+            // )
         );
 
-        // driveJoystick.povDown().whileTrue(
-        //     m_feeder.feedCommand().alongWith(m_stopper.homeCommand())
-        // );
-        // driveJoystick.y().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
-        //     new ShootAtTarget(
-        //         m_trajectoryCalculator.getClosestAllianceFuel(() -> drivetrain.getStateCopy()), 
-        //         () -> -driveJoystick.getLeftY() * MaxSpeed, 
-        //         () -> -driveJoystick.getLeftX() * MaxSpeed, 
-        //         m_shooter, 
-        //         m_hood, 
-        //         drivetrain, 
-        //         m_feeder, 
-        //         m_stopper,
-        //         m_trajectoryCalculator
-        //     )
-        // );
-
-        driveJoystick.x().whileTrue(
-            m_hood.homeCommand()
+        primaryJoystick.rightTrigger().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
+            new ShootAtTarget(
+                m_trajectoryCalculator.getClosestAllianceFuel(() -> drivetrain.getStateCopy()), 
+                () -> -primaryJoystick.getLeftY() * MaxSpeed, 
+                () -> -primaryJoystick.getLeftX() * MaxSpeed, 
+                m_shooter, 
+                m_hood, 
+                drivetrain, 
+                m_feeder, 
+                m_stopper,
+                m_trajectoryCalculator
+            )
+            // .alongWith(
+            //     Commands.runEnd(
+            //         () -> primaryJoystick.setRumble(RumbleType.kBothRumble, 0.5),
+            //         () -> primaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
+            //     )
+            // )
         );
 
-        // driveJoystick.povRight().whileTrue(
-        //     new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO)    
-        //     // new PointToAngle(m_trajectoryCalculator.getRequiredRobotAngleSOTM(drivetrain.getState()), () -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain)
-        //     .alongWith(
-        //         m_shooter.runRPMCommand(m_trajectoryCalculator.getRequiredShooterSpeedHub())
-        //         // m_shooter.runRPMCommand(m_trajectoryCalculator.getRequiredShooterSpeedSOTM(drivetrain.getState()))
-        //         // m_shooter.runRPMCommand(() -> 10000)
-        //     )
-        //     .alongWith(
-        //         // m_hood.gotoAngleCommand(m_trajectoryCalculator.getRequiredHoodAngleSOTM(drivetrain.getState()))
-        //         // m_hood.runCommand(1)
-        //         m_hood.gotoAngleCommand(m_trajectoryCalculator.getRequiredHoodAngleHub())
-        //     )
-        //     // .alongWith(
-        //     //     m_intake.runIntakeCommand()
-        //     // )
-        //     // .alongWith(
-        //     //     m_led.displayShooterSepoint(m_shooter.getLedProgressMark()).onlyIf(driveJoystick.a().negate().and(m_shooter.atSetpoint().negate()))
-        //     // )
-        // );
-        // driveJoystick.a().and(m_shooter.isCommanded()).whileTrue(
-        //     m_led.display(Constants.Led.StatusList.SHOOTING)
-        // );
+        primaryJoystick.rightTrigger().whileTrue(
+            m_led.display(StatusList.SPINUP).onlyWhile(m_stopper.isHomed().negate())  
+        );
+        primaryJoystick.rightTrigger().whileTrue(
+            m_led.display(StatusList.SHOOTING).onlyWhile(m_stopper.isHomed())
+        );
 
-        // driveJoystick.povRight().and(driveJoystick.a().negate()).whileTrue(
-        //     m_led.displayShooterSepoint(m_shooter.getLedProgressMark())
-        // );
+        // Rumble controller when the hub state switches
+        m_networkTablesIO.hubActive().onChange(
+            Commands.runOnce(
+                    () -> primaryJoystick.setRumble(RumbleType.kBothRumble, 1.0)
+                ).andThen(
+                    Commands.waitSeconds(0.25)
+                ).andThen(
+                    () -> primaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
+                ).andThen(
+                    Commands.waitSeconds(0.1)
+                ).andThen(
+                    () -> primaryJoystick.setRumble(RumbleType.kBothRumble, 1.0)
+                ).andThen(
+                    Commands.waitSeconds(0.25)
+                ).andThen(
+                    () -> primaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
+                ).ignoringDisable(true)
+        );
+
+        // --------------------------------------------------------------------------------------------------------------------------------
+        // Enable secondary controller overrides
+        primaryJoystick.back().and(primaryJoystick.start()).onTrue(
+            m_networkTablesIO.setSecondaryJoystickEnabled(() -> !primaryJoystick.rightStick().getAsBoolean())  
+        );
+        secondaryJoystick.back().and(secondaryJoystick.start()).onTrue(
+            m_networkTablesIO.setSecondaryJoystickEnabled(() -> true)  
+        );
         
-        // driveJoystick.a().whileTrue(m_feeder.feedCommand());
-        // driveJoystick.a().whileTrue(
-        //     Commands.runEnd(
-        //         () -> driveJoystick.setRumble(RumbleType.kBothRumble, 1.0),
-        //         () -> driveJoystick.setRumble(RumbleType.kBothRumble, 0.0)
-        //     )
-        // );
+        secondaryJoystick.b().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
+            m_feeder.feedCommand()
+        );
+        secondaryJoystick.b().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
+            m_stopper.homeCommand()
+        );
 
-        // m_shooter.atSetpoint().and(m_shooter.isCommanded()).whileTrue(
-        //     m_led.display(Constants.Led.StatusList.ALIGNED)
-        // ); 
+        secondaryJoystick.povLeft().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
+            Commands.run(() -> m_stopper.homeCommand(), m_stopper)
+        );
+        secondaryJoystick.povRight().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
+            Commands.run(() -> m_stopper.extendCommand(), m_stopper)
+        );
 
-        // driveJoystick.povLeft().whileTrue(
-        //     // m_hood.gotoPercentageCommand(() -> 1.0)
-        //     m_hood.gotoDashboard()
-        //     // .alongWith(
-        //     //     m_shooter.runDashboard()
-        //     // )
-        //     // .alongWith(
-        //     //     m_feeder.feedCommand(0.8)
-        //     // )
-        // );
+        secondaryJoystick.povUp().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
+            m_hood.manualShiftPercentage(() -> 0.1)  
+        );
+        secondaryJoystick.povDown().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
+            m_hood.manualShiftPercentage(() -> -0.1)  
+        );
+        secondaryJoystick.povUp().negate().and(secondaryJoystick.povDown().negate()).whileTrue(
+            m_hood.manualShiftPercentage()
+        );
 
-        // driveJoystick.x().and(() -> m_shooter.isAtSetpoint()).whileTrue(m_feeder.feedCommand());
+        secondaryJoystick.a().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
+            m_shooter.runPercentageCommand(() -> secondaryJoystick.getRightTriggerAxis(), 2000, 4000)
+            // .alongWith(
+            //     m_hood.gotoPercentageCommand(() -> secondaryJoystick.getLeftTriggerAxis())
+            // )
+        );
 
-        // driveJoystick.start().whileTrue(
-        //     new DriveToApriltag(10, drivetrain, m_vision)
-        // );
-        
-        // Point towards the hub.
-        // driveJoystick.a().whileTrue(
-        //     new PointToHub(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO) 
-        // );
-
-        // driveJoystick.b().whileTrue(
-        //     new DriveToPose(new Pose2d(1.0, 1.0, new Rotation2d()), drivetrain, m_networkTablesIO)
-        // );
-        
-        // driveJoystick.a().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
-        //     new PointToAllianceFuel(() -> -driveJoystick.getLeftY() * MaxSpeed, () -> -driveJoystick.getLeftX() * MaxSpeed, drivetrain, m_networkTablesIO).alongWith(m_shooter.runRPMCommand(100))
-        // );
-
-        // #region LEDs
-        // If the robot is ESTOPPED, flash
-        RobotModeTriggers.disabled().and(() -> DriverStation.isEStopped()).whileTrue(m_led.estop().ignoringDisable(true));
-        // #endregion LEDs
-        RobotModeTriggers.disabled().and(() -> DriverStation.isEStopped()).onTrue(Commands.runOnce(() -> alertEstopped.set(true)).ignoringDisable(true));
-
-        // this.unplugged().and(() -> !driveJoystick.isConnected()).onTrue(Commands.runOnce(() -> alertJoystickUnplugged.set(true)).ignoringDisable(true));
-        // controllerUnpluggedTrigger().and(() -> driveJoystick.isConnected()).onTrue(Commands.runOnce(() -> alertJoystickUnplugged.set(false)).ignoringDisable(true));
-        
-        // While the robot is not disabled (NOT in auto, teleop, test), add m_vision measurements to pose.
-        RobotModeTriggers.disabled().whileFalse(
-            m_vision.addVisionMeasurementCommand()
+        // Rumble controller when the hub state switches
+        m_networkTablesIO.hubActive().onChange(
+            Commands.runOnce(
+                    () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 1.0)
+                ).andThen(
+                    Commands.waitSeconds(0.25)
+                ).andThen(
+                    () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
+                ).andThen(
+                    Commands.waitSeconds(0.1)
+                ).andThen(
+                    () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 1.0)
+                ).andThen(
+                    Commands.waitSeconds(0.25)
+                ).andThen(
+                    () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
+                ).onlyIf(m_networkTablesIO.secondaryJoystickEnabled()).ignoringDisable(true)
         );
     }
 

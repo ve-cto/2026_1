@@ -68,21 +68,6 @@ public class ShootAtTarget extends Command {
     shooter.runRPM(() -> (Double) data[1]);
     hood.runClosedLoopAngle(() -> (Double) data[0]);
     // feeder.feed();
-    if (DriverStation.isAutonomousEnabled()) {
-      double[] p = drivetrain.calculatePointOffsetRotationRequirement(target.getTranslation());
-      SmartDashboard.putNumber("!AAA", p[0]);
-      PPHolonomicDriveController.overrideRotationFeedback(
-        () -> p[0]
-      );
-      if (Math.abs(p[1]) < ROTATION_DEADBAND && shooter.isAtSetpoint()) {
-        stopper.home();
-        // feeder.run(0.9);
-        feeder.feed();
-      } else {
-        stopper.extend();
-      }
-        return;
-      }
     if (Math.abs(drivetrain.pointToTranslation2d((Translation2d) data[2], velx.getAsDouble(), vely.getAsDouble())) < ROTATION_DEADBAND && shooter.isAtSetpoint()) {
       stopper.home();
       // feeder.run(0.9);
@@ -99,7 +84,7 @@ public class ShootAtTarget extends Command {
     hood.stopreset();
     feeder.coast();
     stopper.extend();
-    PPHolonomicDriveController.clearRotationFeedbackOverride();
+    trajcalc.clearVirTarget();
   }
 
   // Returns true when the command should end.

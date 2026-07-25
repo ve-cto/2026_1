@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.subsystems.util.CANUtil;
@@ -58,17 +59,17 @@ public class HoodedShooter extends SubsystemBase {
     public HoodedShooter() {
         kCANUtil.registerDevice("m_hood", Constants.Hardware.kHoodId, Constants.Hardware.DeviceType.TalonFX, m_hood);
     
-        SmartDashboard.putNumber("HOODkp", Constants.Hood.kdefaultKp);
-        SmartDashboard.putNumber("HOODki", Constants.Hood.kdefaultKi);
-        SmartDashboard.putNumber("HOODkd", Constants.Hood.kdefaultKd);
+        SmartDashboard.putNumber("Hood/kp", Constants.Hood.kdefaultKp);
+        SmartDashboard.putNumber("Hood/ki", Constants.Hood.kdefaultKi);
+        SmartDashboard.putNumber("Hood/kd", Constants.Hood.kdefaultKd);
 
-        SmartDashboard.putNumber("HOODrequestPosition", Constants.Hood.kAngleHomed);
+        SmartDashboard.putNumber("Hood/requestPosition", Constants.Hood.kAngleHomed);
     };
 
     public void updateMotorConfigs() {
-        slot0Configs.kP = SmartDashboard.getNumber("HOODkp", 0);
-        slot0Configs.kI = SmartDashboard.getNumber("HOODki", 0);
-        slot0Configs.kD = SmartDashboard.getNumber("HOODkd", 0);
+        slot0Configs.kP = SmartDashboard.getNumber("Hood/kp", 0);
+        slot0Configs.kI = SmartDashboard.getNumber("Hood/ki", 0);
+        slot0Configs.kD = SmartDashboard.getNumber("Hood/kd", 0);
         m_hood.getConfigurator().apply(slot0Configs);
     }
 
@@ -76,10 +77,10 @@ public class HoodedShooter extends SubsystemBase {
         pollHoodEncoder();
         // SmartDashboard.putNumber("Encoder s_actuatorPosition Percentage", calculatePositionPercentageActuator());
         // SmartDashboard.putNumber("Encoder s_actuatorPosition Centimeters", calculatePositionCentimeters());
-        SmartDashboard.putNumber("Hood Position", s_hoodPosition);
-        SmartDashboard.putBoolean("HoodSwitch", getEndstop());
-        SmartDashboard.putBoolean("Hood Homed", homed);
-        SmartDashboard.putNumber("Hood Exit Path Angle Degrees", map(s_hoodPosition, 0, kCountExtended, kAngleHomed, kAngleExtended));
+        SmartDashboard.putNumber("Hood/Hood Position", s_hoodPosition);
+        SmartDashboard.putBoolean("Hood/HoodSwitch", getEndstop());
+        SmartDashboard.putBoolean("Hood/Hood Homed", homed);
+        SmartDashboard.putNumber("Hood/Hood Exit Path Angle Degrees", map(s_hoodPosition, 0, kCountExtended, kAngleHomed, kAngleExtended));
 
         if (s_hoodPosition > kCountExtended) {
             if (!Double.isNaN(s_hoodPosition)) {
@@ -169,7 +170,7 @@ public class HoodedShooter extends SubsystemBase {
     }
 
     public Command gotoDashboard() {
-        return this.runEnd(() -> this.runClosedLoopAngle(() -> SmartDashboard.getNumber("HOODrequestPosition", 80)), () -> this.hold());
+        return this.runEnd(() -> this.runClosedLoopAngle(() -> SmartDashboard.getNumber("Hood/HOODrequestPosition", 80)), () -> this.hold());
     }
 
     public void runClosedLoop(DoubleSupplier setpoint) {
@@ -284,6 +285,22 @@ public class HoodedShooter extends SubsystemBase {
     public Command resetHomeCommand() {
         return this.runOnce(() -> this.reset());
     }
+    
+    private double mshiftpercent = 0;
+    public Command manualShiftPercentage(DoubleSupplier p) {
+        return this.runOnce(() -> {
+            this.mshiftpercent += p.getAsDouble();
+            this.mshiftpercent = this.mshiftpercent > 1 ? 1 : mshiftpercent;
+            this.mshiftpercent = this.mshiftpercent < 0 ? 0 : mshiftpercent;
+            SmartDashboard.putNumber("AAAAAAAHH", this.mshiftpercent);
+        }).andThen(
+            this.run(() -> this.runClosedLoopPercentage(() -> this.mshiftpercent))
+        );
+    }
+    public Command manualShiftPercentage() {
+        return this.run(() -> this.runClosedLoopPercentage(() -> this.mshiftpercent));
+    }
+    
 
     // Simulation -----------------------------------------------------------------------------------------------------------------------------------------------------
     // #region Simulation

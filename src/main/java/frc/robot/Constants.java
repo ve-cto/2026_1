@@ -120,7 +120,7 @@ public final class Constants {
 
 
         public static final double kAngleExtended = 45;
-        public static final double kAngleHomed = 70;
+        public static final double kAngleHomed = 67;
         public static final double kCountExtended = 2;
 
         public static final double kdefaultKp = 2;
