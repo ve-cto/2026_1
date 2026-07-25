@@ -26,7 +26,7 @@ import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.util.TrajectoryCalculator;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
-public class ShootAtTarget extends Command {
+public class ShootAtTargetAutonomous extends Command {
   Supplier<Pose2d> targetSup;
   Pose2d target;
   Shooter shooter;
@@ -35,11 +35,11 @@ public class ShootAtTarget extends Command {
   TrajectoryCalculator trajcalc;
   Feeder feeder;
   Stopper stopper;
-  DoubleSupplier velx;
-  DoubleSupplier vely;
   double ROTATION_DEADBAND = (10 * Math.PI)/180;
-  /** Creates a new ShootAtTarget. */
-  public ShootAtTarget(Supplier<Pose2d> targetSup, DoubleSupplier velx, DoubleSupplier vely, Shooter shooter, HoodedShooter hood, CommandSwerveDrivetrain drivetrain, Feeder feeder, Stopper stopper, TrajectoryCalculator trajcalc) {
+  /*
+   * Shoot at a pose whilst in Autonomous Mode,
+   */
+  public ShootAtTargetAutonomous(Supplier<Pose2d> targetSup, Shooter shooter, HoodedShooter hood, CommandSwerveDrivetrain drivetrain, Feeder feeder, Stopper stopper, TrajectoryCalculator trajcalc) {
     // Use addRequirements() here to declare subsystem dependencies.
     this.targetSup = targetSup;
     this.shooter = shooter;
@@ -48,9 +48,7 @@ public class ShootAtTarget extends Command {
     this.trajcalc = trajcalc;
     this.feeder = feeder;
     this.stopper = stopper;
-    this.velx = velx;
-    this.vely = vely;
-    addRequirements(shooter, hood, drivetrain, feeder, stopper);
+    addRequirements(shooter, hood, feeder, stopper);
   }
 
   // Called when the command is initially scheduled.
@@ -83,13 +81,6 @@ public class ShootAtTarget extends Command {
       }
         return;
       }
-    if (Math.abs(drivetrain.pointToTranslation2d((Translation2d) data[2], velx.getAsDouble(), vely.getAsDouble())) < ROTATION_DEADBAND && shooter.isAtSetpoint()) {
-      stopper.home();
-      // feeder.run(0.9);
-      feeder.feed();
-    } else {
-      stopper.extend();
-    }
   }
 
   // Called once the command ends or is interrupted.

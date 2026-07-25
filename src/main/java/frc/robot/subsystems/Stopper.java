@@ -61,7 +61,9 @@ public class Stopper extends SubsystemBase {
   }
 
   public void extend(double pos) {
-    this.run(mechanismPIDController.calculate(-pos));
+    double t = mechanismPIDController.calculate(-pos);
+    t = Math.abs(t) < 0.3 ? Math.copySign(0.3, t) : t;
+    this.run(t);
   }
 
   public void retract() {

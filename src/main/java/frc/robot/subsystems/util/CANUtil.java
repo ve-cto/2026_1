@@ -75,7 +75,7 @@ public class CANUtil extends SubsystemBase {
       SmartDashboard.putBoolean("Clear CAN Alerts", false);
     }
 
-    if (refreshTimer.hasElapsed(1)) {
+    if (refreshTimer.hasElapsed(5)) {
       boolean anyDisconnect = false;
       int disconnectCount = 0;
 

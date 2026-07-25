@@ -46,6 +46,7 @@ import frc.robot.subsystems.Stopper;
 // import frc.robot.commands.drive.PointToPose;
 import frc.robot.commands.RunDebugMotors;
 import frc.robot.commands.ShootAtTarget;
+import frc.robot.commands.ShootAtTargetAutonomous;
 // import frc.robot.commands.drive.PointToAllianceFuel;
 // Subsystems
 import frc.robot.subsystems.Intake;
@@ -121,6 +122,15 @@ public class RobotContainer {
         NamedCommands.registerCommand("Feed", m_feeder.feedCommand());
         NamedCommands.registerCommand("ShooterStop", m_shooter.coastCommand());
         NamedCommands.registerCommand("HomeHood", m_hood.resetHomeCommand());
+        NamedCommands.registerCommand("ShootAtHub", new ShootAtTargetAutonomous(
+                () -> m_networkTablesIO.getOwnHubPose(), 
+                m_shooter, 
+                m_hood, 
+                drivetrain, 
+                m_feeder, 
+                m_stopper,
+                m_trajectoryCalculator
+            ));
 
         // Create our auto chooser
         // Pathplanner autos get populated into it automatically
@@ -212,6 +222,7 @@ public class RobotContainer {
         );
         m_stopper.setDefaultCommand(
             m_stopper.homeExtendCommand()
+            // m_stopper.homeCommand()
         );
         
         // Default to displaying the specific modes' pattern (disconn, disabl, auto, teleop)
@@ -257,7 +268,7 @@ public class RobotContainer {
         );
 
         driveJoystick.povUp().whileTrue(
-            m_arm.moveArmCommand(0.7)
+            m_arm.moveArmCommand(0.9)
         );
 
         driveJoystick.povLeft().whileTrue(
@@ -268,15 +279,15 @@ public class RobotContainer {
             m_stopper.extendCommand()
         );
 
-        driveJoystick.a().whileTrue(
-            m_feeder.feedCommand()
-        );
+        // driveJoystick.a().whileTrue(
+        //     m_feeder.feedCommand()
+        // );
 
-        driveJoystick.b().whileTrue(
-            m_shooter.runRPMCommand(
-                () -> 3000
-            )
-        );
+        // driveJoystick.b().whileTrue(
+        //     m_shooter.runRPMCommand(
+        //         () -> 3000
+        //     )
+        // );
 
         
 
@@ -289,14 +300,15 @@ public class RobotContainer {
         // driveJoystick.y().whileTrue(m_hood.runCommand(-1.0));
         // driveJoystick.y().whileTrue(m_hood.runSetpointPercentageCommand(0.8));
         // driveJoystick.x().whileTrue(m_hood.homeInCommand());
-        // driveJoystick.y().whileTrue(m_hood.gotoDashboard());
+        // driveJoystick.a().whileTrue(m_hood.gotoDashboard());
         // driveJoystick.y().whileTrue(m_hood.runCommand(-1.0));
         // driveJoystick.x().whileTrue(m_hood.homeCommand());
         // driveJoystick.a().whileTrue(m_hood.resetHomeCommand());
         // m_hood.setDefaultCommand(m_hood.holdCommand());
 
         // TODO:
-        driveJoystick.y().and(() -> m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
+        // driveJoystick.y().and(() -> m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
+        driveJoystick.y().whileTrue(
             new ShootAtTarget(
                 () -> m_networkTablesIO.getOwnHubPose(), 
                 () -> -driveJoystick.getLeftY() * MaxSpeed, 
@@ -309,19 +321,23 @@ public class RobotContainer {
                 m_trajectoryCalculator
             )
         );
-        driveJoystick.y().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
-            new ShootAtTarget(
-                m_trajectoryCalculator.getClosestAllianceFuel(() -> drivetrain.getStateCopy()), 
-                () -> -driveJoystick.getLeftY() * MaxSpeed, 
-                () -> -driveJoystick.getLeftX() * MaxSpeed, 
-                m_shooter, 
-                m_hood, 
-                drivetrain, 
-                m_feeder, 
-                m_stopper,
-                m_trajectoryCalculator
-            )
-        );
+
+        // driveJoystick.povDown().whileTrue(
+        //     m_feeder.feedCommand().alongWith(m_stopper.homeCommand())
+        // );
+        // driveJoystick.y().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
+        //     new ShootAtTarget(
+        //         m_trajectoryCalculator.getClosestAllianceFuel(() -> drivetrain.getStateCopy()), 
+        //         () -> -driveJoystick.getLeftY() * MaxSpeed, 
+        //         () -> -driveJoystick.getLeftX() * MaxSpeed, 
+        //         m_shooter, 
+        //         m_hood, 
+        //         drivetrain, 
+        //         m_feeder, 
+        //         m_stopper,
+        //         m_trajectoryCalculator
+        //     )
+        // );
 
         driveJoystick.x().whileTrue(
             m_hood.homeCommand()

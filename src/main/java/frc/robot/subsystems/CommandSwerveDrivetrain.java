@@ -502,12 +502,11 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         .withRotationalDeadband(0.0) // Add a `% deadband
         .withDriveRequestType(DriveRequestType.Velocity); // Use closed-loop control for drive motors
 
-
     private PhoenixPIDController m_thetaController; 
     {
-    m_thetaController = new PhoenixPIDController(8.0, 0.0, 0.0);
-    m_thetaController.enableContinuousInput(-Math.PI, Math.PI);
-    point.HeadingController = m_thetaController;
+        m_thetaController = new PhoenixPIDController(8.0, 0.0, 0.0);
+        m_thetaController.enableContinuousInput(-Math.PI, Math.PI);
+        point.HeadingController = m_thetaController;
     }
 
     public double pointToPose(Pose2d targetPose, double velX, double velY) {
@@ -533,6 +532,47 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         SmartDashboard.putNumber("pointoffset", offset);
         return offset;
     }
+
+    public double pointToTranslation2d(Translation2d target, double velX, double velY) {
+        Pose2d curPose = this.getState().Pose;
+        Translation2d targetPoseRelative = target.minus(curPose.getTranslation());
+        Rotation2d targetRotationRelative = new Rotation2d(Math.atan2(-targetPoseRelative.getY(), -targetPoseRelative.getX()));
+        // Rotation2d rotError = curPose.getRotation().minus(targetRotationRelative);
+        // SmartDashboard.putNumber("rotError", rotError.getDegrees());
+        SmartDashboard.putNumber("targetRotationRel", targetRotationRelative.getDegrees());
+        // double offset = targetRotationRelative.getRadians() - curPose.getRotation().getRadians();
+        // double offset = Math.abs(targetRotationRelative.getRadians());
+        // double offset = Math.toDegrees(Math.acos((-targetPoseRelative.getX()*curPose.getRotation().getSin() - targetPoseRelative.getY()*curPose.getRotation().getCos()) / targetPoseRelative.getNorm()));
+        double offset = Math.toDegrees(Math.atan2(target.getY() - curPose.getY(), target.getX() - curPose.getX()));
+        offset = offset - curPose.getRotation().getDegrees();
+        offset = Math.toRadians(normalizeDegrees(offset));
+        // double offset2 = Math.toDegrees(curPose.getRotation().getRadians())-offset;
+        // SmartDashboard.putNumber("currposeradians", curPose.getRotation().getRadians());
+        SmartDashboard.putNumber("pointoffset", offset);
+        this.setControl(
+            point.withVelocityX(velX)
+            .withVelocityY(velY)
+            .withTargetDirection(targetRotationRelative)
+        );
+        return offset;
+    }
+
+    public double[] calculatePointOffsetRotationRequirement(Translation2d target) {
+        Pose2d curPose = this.getState().Pose;
+        Translation2d targetPoseRelative = target.minus(curPose.getTranslation());
+        Rotation2d targetRotationRelative = new Rotation2d(Math.atan2(-targetPoseRelative.getY(), -targetPoseRelative.getX())).rotateBy(Rotation2d.k180deg);
+        double offset = Math.toDegrees(Math.atan2(target.getY() - curPose.getY(), target.getX() - curPose.getX()));
+        offset = offset - curPose.getRotation().getDegrees();
+        offset = Math.toRadians(normalizeDegrees(offset));
+
+        double req = point.HeadingController.calculate(
+            curPose.getRotation().getRadians(), 
+            targetRotationRelative.getRadians(), 
+            Utils.getCurrentTimeSeconds()
+        );
+        return new double[] {req, offset};
+    }
+
     public static double normalizeDegrees(double angle) {
         angle = angle % 360;
         if (angle > 180) angle -= 360;

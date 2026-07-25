@@ -62,7 +62,7 @@ public class HoodedShooter extends SubsystemBase {
         SmartDashboard.putNumber("HOODki", Constants.Hood.kdefaultKi);
         SmartDashboard.putNumber("HOODkd", Constants.Hood.kdefaultKd);
 
-        SmartDashboard.putNumber("HOODrequestPosition", 80.0);
+        SmartDashboard.putNumber("HOODrequestPosition", Constants.Hood.kAngleHomed);
     };
 
     public void updateMotorConfigs() {

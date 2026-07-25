@@ -48,28 +48,28 @@ public class TrajectoryCalculator extends SubsystemBase {
     private boolean isRedAlliance = true;
 
     private double shooterSpeedPairs[][] = {
-        {1.5, 3200},
-        {2.5, 3500},
-        {3.5, 3620},
-        {4.5, 3690},
+        {0.9, 2700},
+        {1.9, 2800},
+        {2.9, 3300},
+        {3.9, 3690},
         {5.5, 3995},
         {6.5, 4200}
     };
 
     private double hoodAnglePairsDegrees[][] = {
-        {1, 67},
-        {2, 60},
-        {3.5, 55},
-        {4.5, 45},
+        {0.9, 70},
+        {1.9, 65},
+        {2.9, 62},
+        {3.9, 45},
         {5.5, 47},
         {6.5, 45},
     };
 
     private double ballAirtimePairs[][] = { // seconds
-        {1, 1},
-        {2, 1.1},
-        {3.5, 1.2},
-        {4.5, 1.3},
+        {0.9, 0.89},
+        {1.9, 1},
+        {2.9, 1.2},
+        {3.9, 1.3},
         {5.5, 1.4},
         {6.5, 1.5},
     };
