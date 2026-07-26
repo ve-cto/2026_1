@@ -115,7 +115,8 @@ public class CANUtil extends SubsystemBase {
     } else if (entry.type == Constants.Hardware.DeviceType.VictorSPX) {
       WPI_VictorSPX spx = (WPI_VictorSPX) entry.device();
       spx.getFaults(spxfaults);
-      if (spx.getBusVoltage() == 0 || Double.isNaN(spx.getBusVoltage()) || spxfaults.APIError || spx == null || spxfaults == null) {
+      // if (spx.getBusVoltage() == 0 || Double.isNaN(spx.getBusVoltage()) || spxfaults.APIError || spx == null || spxfaults == null || !spx.isAlive()) {
+      if (!spx.isAlive()) {
         updateDisconnectAlert(entry, true);
       } else {
         updateDisconnectAlert(entry, false);
