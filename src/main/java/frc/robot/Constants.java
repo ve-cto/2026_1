@@ -14,7 +14,7 @@ public final class Constants {
         public static final int kShooterLId = 18; // kraken
         public static final int kShooterRId = 19; // kraken
         public static final int kFeederSPXId = 20;
-        public static final int kFeederFXId = 21;
+        // public static final int kFeederFXId = 21;
         public static final int kHoodId = 22;
         public static final int kStopperId = 31;
         
@@ -30,14 +30,14 @@ public final class Constants {
         public static final int kStopperSwitchChannel = 6;
         
 
-        public static final int kDebugMotor1 = 15;
+        public static final int kDebugMotor1 = 99;
         public static final int kDebugMotor2 = 99;
         public static final int kDebugMotor3 = 99;
         public static final int kDebugMotor4 = 99; // kraken
         public static final int kDebugMotor5 = 99; // kraken
 
         public static final int kLedId = 0; // PWM port
-        public static final int kLedLength = 101;
+        public static final int kLedLength = 72;
 
         public static final double kMaxKrakenFreeSpeed = 6000;
 
@@ -50,6 +50,8 @@ public final class Constants {
     }
 
     public static final class Stopper {
+        public static final double kDeadbandFraction = 0.3;
+        public static final double kExtendedPosition = -700;
     }
     public static final class Intake {
         public static final double kIntakeForwardSpeed = -0.8;
@@ -87,12 +89,15 @@ public final class Constants {
         // list of all things the leds could display
         public static enum StatusList {
             // robot state
+            BLANK,
             DISCONNECT,
             DISABLED,
             ESTOPPED,
-            BLANK,
             TELEOP,           
             AUTONOMOUS,
+            DSCONNECTED,
+            DSDISCONNECTED,
+            DEBUG, // secondary overrides enabled
 
             // robot aligned but shooter is not spun up
             ALIGNED,
@@ -102,9 +107,9 @@ public final class Constants {
             // robot is shooting
             SHOOTING,
             // progress map for shooter
-            SPINUP,
+            PMSHOOTER,
             // progress map for hood position
-            HOOD
+            PMHOOD
         }
     }
 

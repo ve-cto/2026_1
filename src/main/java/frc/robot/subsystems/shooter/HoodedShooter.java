@@ -22,7 +22,6 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.subsystems.util.CANUtil;
@@ -115,7 +114,7 @@ public class HoodedShooter extends SubsystemBase {
     }
 
     public boolean getEndstop() {
-        return s_endstop.get();
+        return !s_endstop.get();
     }
 
     public boolean isAtSetpoint() {
@@ -292,7 +291,7 @@ public class HoodedShooter extends SubsystemBase {
             this.mshiftpercent += p.getAsDouble();
             this.mshiftpercent = this.mshiftpercent > 1 ? 1 : mshiftpercent;
             this.mshiftpercent = this.mshiftpercent < 0 ? 0 : mshiftpercent;
-            SmartDashboard.putNumber("AAAAAAAHH", this.mshiftpercent);
+            // SmartDashboard.putNumber("AAAAAAAHH", this.mshiftpercent);
         }).andThen(
             this.run(() -> this.runClosedLoopPercentage(() -> this.mshiftpercent))
         );

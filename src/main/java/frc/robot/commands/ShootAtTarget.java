@@ -7,21 +7,13 @@ package frc.robot.commands;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
-import com.ctre.phoenix6.swerve.jni.SwerveJNI.DriveState;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
-
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.Feeder;
 import frc.robot.subsystems.shooter.HoodedShooter;
 import frc.robot.subsystems.Stopper;
-import frc.robot.Constants.DS.GameState;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.Led;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.util.TrajectoryCalculator;
 

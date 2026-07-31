@@ -8,9 +8,9 @@ package frc.robot;
 
 // Swerve
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
-import com.ctre.phoenix6.signals.StatusLedWhenActiveValue;
+// import com.ctre.phoenix6.signals.StatusLedWhenActiveValue;
 import com.ctre.phoenix6.swerve.SwerveRequest;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+// import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -22,41 +22,41 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.FollowPathCommand;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.networktables.NetworkTableInstance;
+// import edu.wpi.first.math.geometry.Pose2d;
+// import edu.wpi.first.math.geometry.Rotation2d;
+// import edu.wpi.first.networktables.NetworkTableInstance;
 
 import static edu.wpi.first.units.Units.*;
 
-import java.util.function.BooleanSupplier;
+// import java.util.function.BooleanSupplier;
 
 // Command Setup and Controllers
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
+// import edu.wpi.first.wpilibj2.command.button.CommandPS4Controller;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
+// import edu.wpi.first.wpilibj2.command.InstantCommand;
+// import edu.wpi.first.wpilibj2.command.WaitCommand;
 // Commands
 // import frc.robot.commands.drive.DriveToApriltag;
 // import frc.robot.commands.drive.DriveToPose;
-import frc.robot.commands.drive.PointToHub;
-import frc.robot.commands.drive.PointToAngle;
+// import frc.robot.commands.drive.PointToHub;
+// import frc.robot.commands.drive.PointToAngle;
 import frc.robot.subsystems.Stopper;
 import frc.robot.Constants.Led.StatusList;
 // import frc.robot.commands.drive.PointToPose;
-import frc.robot.commands.RunDebugMotors;
+// import frc.robot.commands.RunDebugMotors;
 import frc.robot.commands.ShootAtTarget;
 import frc.robot.commands.ShootAtTargetAutonomous;
 // import frc.robot.commands.drive.PointToAllianceFuel;
 // Subsystems
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Led;
-import frc.robot.subsystems.NetworkTablesIO;
 import frc.robot.subsystems.shooter.HoodedShooter;
 import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.util.NetworkTablesIO;
 import frc.robot.subsystems.util.TrajectoryCalculator;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.Arm;
@@ -75,13 +75,13 @@ public class RobotContainer {
         .withRotationalDeadband(MaxAngularRate * Constants.Swerve.kDeadbandFraction) // Add a 10% deadband
         .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
 
-    private final SwerveRequest.RobotCentric driveRobotCentric = new SwerveRequest.RobotCentric()
-        .withDeadband(MaxSpeed * Constants.Swerve.kDeadbandFraction)
-        .withRotationalDeadband(MaxAngularRate * Constants.Swerve.kDeadbandFraction) // Add a `% deadband
-        .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
+    // private final SwerveRequest.RobotCentric driveRobotCentric = new SwerveRequest.RobotCentric()
+    //     .withDeadband(MaxSpeed * Constants.Swerve.kDeadbandFraction)
+    //     .withRotationalDeadband(MaxAngularRate * Constants.Swerve.kDeadbandFraction) // Add a `% deadband
+    //     .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
 
-    private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
-    private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
+    // private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
+    // private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
     private final Telemetry logger = new Telemetry(MaxSpeed);
     // #endregion Swerve setup
     
@@ -93,7 +93,7 @@ public class RobotContainer {
     // #region Subsystems
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
     public final NetworkTablesIO m_networkTablesIO = new NetworkTablesIO(primaryJoystick, secondaryJoystick);
-    public final Vision m_vision = new Vision(drivetrain, m_networkTablesIO);
+    public final Vision m_vision = new Vision(drivetrain);
     private final Intake m_intake = new Intake();
     private final Arm m_arm = new Arm();
     // private final DebugMotors m_DebugMotors = new DebugMotors();
@@ -212,28 +212,33 @@ public class RobotContainer {
         );
         // Default to displaying the specific modes' pattern (disconn, disabl, auto, teleop)
         m_led.setDefaultCommand(
-            m_led.handleDefault().ignoringDisable(true)
+            Commands.either(
+                m_led.display(StatusList.DEBUG),
+                m_led.handleDefault(),
+                m_networkTablesIO.secondaryJoystickEnabled().and(() -> DriverStation.isEnabled())
+            ).ignoringDisable(true)
         );
 
         // --------------------------------------------------------------------------------------------------------------------------------
-        // When we enable test mode, update the subsystem PID configs (kp ki kd)
-    { 
+        // When we enable test mode, update the subsystem PID configs (kp ki kd) 
         RobotModeTriggers.test().whileTrue(m_shooter.updateMotorConfigsCommand().alongWith(m_hood.updateMotorConfigsCommand()));
         RobotModeTriggers.autonomous().or(RobotModeTriggers.teleop().or(RobotModeTriggers.test())).onChange(m_trajectoryCalculator.updateAllianceCommand().ignoringDisable(true));
         // If the robot is ESTOPPED, flash and alert
         RobotModeTriggers.disabled().and(() -> DriverStation.isEStopped()).whileTrue(m_led.estop().ignoringDisable(true));
         RobotModeTriggers.disabled().and(() -> DriverStation.isEStopped()).onTrue(Commands.runOnce(() -> alertEstopped.set(true)).ignoringDisable(true));
-    }
-        
+        m_networkTablesIO.radioReady().onTrue(m_led.flash(Constants.Led.StatusList.DSCONNECTED, 2, 0.5).ignoringDisable(true));
+        m_networkTablesIO.DSAttached().onTrue(m_led.flash(Constants.Led.StatusList.DSCONNECTED, 1, 0.1).ignoringDisable(true));
+        m_networkTablesIO.DSAttached().onFalse(m_led.flash(Constants.Led.StatusList.DSDISCONNECTED, 1, 0.1).ignoringDisable(true));
+
         // Reset the field-centric heading on button press. Note that this has limited effect during the actual game, as m_vision measurements will override it.
         primaryJoystick.povLeft().and(primaryJoystick.rightStick()).onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldCentric()));
         // Disable vision processing for this match.
         primaryJoystick.povDown().and(primaryJoystick.rightStick()).whileTrue(
-          m_vision.setVisionEnabled(false)  
+          m_vision.setVisionEnabled(false).asProxy()
         );
         // Re-enable vision processing for this match.
         primaryJoystick.povUp().and(primaryJoystick.rightStick()).whileTrue(
-            m_vision.setVisionEnabled(true)
+            m_vision.setVisionEnabled(true).asProxy()
         );
         RobotModeTriggers.disabled().negate().and(m_vision.isVisionEnabled()).whileTrue( 
             m_vision.addVisionMeasurementCommand(() -> drivetrain.getStateCopy())
@@ -303,9 +308,9 @@ public class RobotContainer {
             // )
         );
 
-        primaryJoystick.rightTrigger().whileTrue(
-            m_led.display(StatusList.SPINUP).onlyWhile(m_stopper.isHomed().negate())  
-        );
+        // primaryJoystick.rightTrigger().whileTrue(
+        //     m_led.display(StatusList.PMSHOOTER).onlyWhile(m_stopper.isHomed().negate())  
+        // );
         primaryJoystick.rightTrigger().whileTrue(
             m_led.display(StatusList.SHOOTING).onlyWhile(m_stopper.isHomed())
         );
@@ -332,12 +337,16 @@ public class RobotContainer {
         // --------------------------------------------------------------------------------------------------------------------------------
         // Enable secondary controller overrides
         primaryJoystick.back().and(primaryJoystick.start()).onTrue(
-            m_networkTablesIO.setSecondaryJoystickEnabled(() -> !primaryJoystick.rightStick().getAsBoolean())  
+            m_networkTablesIO.setSecondaryJoystickEnabled(() -> !primaryJoystick.rightStick().getAsBoolean())  // allow disabling if modifier pressed (just grow extra fingers)
         );
-        secondaryJoystick.back().and(secondaryJoystick.start()).onTrue(
-            m_networkTablesIO.setSecondaryJoystickEnabled(() -> true)  
-        );
+        // secondaryJoystick.back().and(secondaryJoystick.start()).onTrue(
+        //     m_networkTablesIO.setSecondaryJoystickEnabled(() -> true)  
+        // );
         
+        m_networkTablesIO.secondaryJoystickEnabled().and(RobotModeTriggers.teleop()).whileTrue(
+            m_led.display(StatusList.DEBUG)
+        ); 
+
         secondaryJoystick.b().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
             m_feeder.feedCommand()
         );
@@ -345,11 +354,11 @@ public class RobotContainer {
             m_stopper.homeCommand()
         );
 
-        secondaryJoystick.povLeft().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
-            Commands.run(() -> m_stopper.homeCommand(), m_stopper)
+        secondaryJoystick.povLeft().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
+            m_stopper.homeCommand()
         );
-        secondaryJoystick.povRight().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
-            Commands.run(() -> m_stopper.extendCommand(), m_stopper)
+        secondaryJoystick.povRight().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
+            m_stopper.extendCommand()
         );
 
         secondaryJoystick.povUp().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
@@ -358,7 +367,7 @@ public class RobotContainer {
         secondaryJoystick.povDown().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
             m_hood.manualShiftPercentage(() -> -0.1)  
         );
-        secondaryJoystick.povUp().negate().and(secondaryJoystick.povDown().negate()).whileTrue(
+        secondaryJoystick.povUp().negate().and(secondaryJoystick.povDown().negate()).and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
             m_hood.manualShiftPercentage()
         );
 

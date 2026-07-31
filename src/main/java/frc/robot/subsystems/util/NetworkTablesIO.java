@@ -2,8 +2,10 @@
 // Open Source Software; you can modify and/or share it under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
-package frc.robot.subsystems;
+package frc.robot.subsystems.util;
 
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.text.DecimalFormat;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
@@ -17,7 +19,6 @@ import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.PubSubOption;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 // import edu.wpi.first.wpilibj.Alert;
@@ -41,6 +42,8 @@ public class NetworkTablesIO extends SubsystemBase {
   private boolean isInRedAllianceZone = false;
   private boolean isInBlueAllianceZone = false;
   private boolean isInCenterField = false;
+
+  private double speedLimit = 1;
 
   private final Pose2d blueHubPose = new Pose2d(4.65, 4, new Rotation2d());
   private final Pose2d redHubPose = new Pose2d(12, 4, new Rotation2d());
@@ -73,6 +76,7 @@ public class NetworkTablesIO extends SubsystemBase {
   public NetworkTablesIO(CommandXboxController primaryJoystick, CommandXboxController secondaryJoystick) {
     this.primaryJoystick = primaryJoystick;
     this.secondaryJoystick = secondaryJoystick;
+    SmartDashboard.putNumber("Swerve Speed Limit", this.speedLimit);
   }
 
   @Override
@@ -84,7 +88,7 @@ public class NetworkTablesIO extends SubsystemBase {
     this.drivetrainPose = new Pose2d(translation, rotation);
     this.isRedAlliance = allianceSubscriber.get();
     
-    // If the match time is -1, IE, it doesn't exist, replace with 0.
+    // If the match time is -1, IE, it doesn't exist or the robot is not in a match, replace with 0.
     SmartDashboard.putNumber("Match/Match Time", DriverStation.getMatchTime() == -1 ? 0 : Double.valueOf(oneDP.format(DriverStation.getMatchTime())));
 
     if (redAllianceZoneRect.contains(getNetworkPose().getTranslation())) {
@@ -111,8 +115,9 @@ public class NetworkTablesIO extends SubsystemBase {
       this.isInCenterField = false;
     }
 
-    alertPrimaryJoystickUnplugged.set(primaryJoystick.getHID().getAxisCount() == 6 ? false : true);
-    alertSecondaryJoystickUnplugged.set(secondaryJoystick.getHID().getAxisCount() == 6 ? false : true);
+    // 
+    alertPrimaryJoystickUnplugged.set(primaryJoystick.getHID().getAxisCount() == 6 || !primaryJoystick.isConnected() ? false : true);
+    alertSecondaryJoystickUnplugged.set(secondaryJoystick.getHID().getAxisCount() == 6 || !secondaryJoystick.isConnected() ? false : true);
 
     SmartDashboard.putBoolean("Vision/isInBlueAllianceZone", isInBlueAllianceZone);
     SmartDashboard.putBoolean("Vision/isInRedAllianceZone", isInRedAllianceZone);
@@ -126,12 +131,19 @@ public class NetworkTablesIO extends SubsystemBase {
     return DriverStation.isTestEnabled();
   }
 
-  public boolean getDebugModeEnabledv() {
-    return (debugChooser.getSelected() && getTestModeEnabled());
+  public Command updateSpeedLimit() {
+    return runOnce(() -> {
+    this.speedLimit = SmartDashboard.getNumber("Swerve Speed Limit", this.speedLimit)
+    ;}
+    );
   }
 
+  // public boolean getDebugModeEnabled() {
+  //   return (debugChooser.getSelected() && getTestModeEnabled());
+  // }
+
   public BooleanSupplier getDebugModeEnabled() {
-    return () -> getDebugModeEnabledv();
+    return () -> (debugChooser.getSelected() && getTestModeEnabled());
   }
 
   public Pose2d getNetworkPose() {
@@ -173,6 +185,10 @@ public class NetworkTablesIO extends SubsystemBase {
     } else {
       return redHubPose;
     }
+  }
+
+  public double getSpeedLimiter() {
+    return this.speedLimit;
   }
 
   public double getMatchTime() {
@@ -257,9 +273,25 @@ public class NetworkTablesIO extends SubsystemBase {
       return true;
     }
   }
+
+  public Trigger radioReady() {
+    return new Trigger(() -> {
+        try {
+            NetworkInterface eth0 = NetworkInterface.getByName("eth0");
+            return eth0 != null && eth0.isUp();
+        } catch (SocketException e) {
+            return false;
+        }
+      }
+    );
+  };
   
   public Trigger hubActive() {
     return new Trigger(() -> isHubActive());
+  }
+
+  public Trigger DSAttached() {
+    return new Trigger(() -> DriverStation.isDSAttached());
   }
 
   public void setSecondaryJoystickEnabled(boolean t) {

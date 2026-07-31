@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.List;
 
 import com.ctre.phoenix.motorcontrol.Faults;
-import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.Pigeon2;
@@ -104,38 +103,41 @@ public class CANUtil extends SubsystemBase {
   }
 
   public void checkAlive(CANDeviceEntry entry) {
-    if (entry.type == Constants.Hardware.DeviceType.TalonFX) {
-      TalonFX fx = (TalonFX) entry.device();
-      if (!fx.isConnected()) {
-        updateDisconnectAlert(entry, true);
-      } else {
-        updateDisconnectAlert(entry, false);
-      }
-      return;
-    } else if (entry.type == Constants.Hardware.DeviceType.VictorSPX) {
-      WPI_VictorSPX spx = (WPI_VictorSPX) entry.device();
-      spx.getFaults(spxfaults);
-      // if (spx.getBusVoltage() == 0 || Double.isNaN(spx.getBusVoltage()) || spxfaults.APIError || spx == null || spxfaults == null || !spx.isAlive()) {
-      if (!spx.isAlive()) {
-        updateDisconnectAlert(entry, true);
-      } else {
-        updateDisconnectAlert(entry, false);
-      }
-      return;
-    } else if (entry.type == Constants.Hardware.DeviceType.CANcoder) {
-      CANcoder cc = (CANcoder) entry.device();
-      if (!cc.isConnected()) {
-        updateDisconnectAlert(entry, true);
-      } else {
-        updateDisconnectAlert(entry, false);
-      }
-    } else if (entry.type == Constants.Hardware.DeviceType.Pigeon) {
-      Pigeon2 pig = (Pigeon2) entry.device();
-      if (!pig.isConnected()) {
-        updateDisconnectAlert(entry, true);
-      } else {
-        updateDisconnectAlert(entry, false);
-      }
+    switch (entry.type) {
+      case TalonFX:
+        TalonFX fx = (TalonFX) entry.device();
+        if (!fx.isConnected()) {
+          updateDisconnectAlert(entry, true);
+        } else {
+          updateDisconnectAlert(entry, false);
+        }
+        break;
+      case VictorSPX:
+        WPI_VictorSPX spx = (WPI_VictorSPX) entry.device();
+        spx.getFaults(spxfaults);
+        // if (spx.getBusVoltage() == 0 || Double.isNaN(spx.getBusVoltage()) || spxfaults.APIError || spx == null || spxfaults == null || !spx.isAlive()) {
+        if (!spx.isAlive()) {
+          updateDisconnectAlert(entry, true);
+        } else {
+          updateDisconnectAlert(entry, false);
+        }
+        break;
+      case CANcoder:
+        CANcoder cc = (CANcoder) entry.device();
+        if (!cc.isConnected()) {
+          updateDisconnectAlert(entry, true);
+        } else {
+          updateDisconnectAlert(entry, false);
+        }
+        break;
+      case Pigeon:
+        Pigeon2 pig = (Pigeon2) entry.device();
+        if (!pig.isConnected()) {
+          updateDisconnectAlert(entry, true);
+        } else {
+          updateDisconnectAlert(entry, false);
+        }
+        break;
     }
   }
 
@@ -154,6 +156,9 @@ public class CANUtil extends SubsystemBase {
     }
   }
 
+  /*
+   * Register a device to CANUtil, allowing automatic error monitoring. 
+   */
   public void registerDevice(String deviceName, int deviceId, Constants.Hardware.DeviceType deviceType, Object device) {
     if (deviceType == Constants.Hardware.DeviceType.TalonFX) {
       CANDeviceEntry entry = new CANDeviceEntry(deviceName, deviceId, deviceType, device, new Alert("CANAlerts_","Connected?", AlertType.kError), new Alert("CANAlerts_","Last time connected", AlertType.kWarning), new Alert("CANAlerts_","undervoltage", AlertType.kWarning), new Alert("CANAlerts_","", AlertType.kWarning));
@@ -179,35 +184,67 @@ public class CANUtil extends SubsystemBase {
   // }
 
   public void checkUnstableSupplyVoltageFault(CANDeviceEntry entry) {
-    if (entry.type == Constants.Hardware.DeviceType.TalonFX) {
-      TalonFX fx = (TalonFX) entry.device();
-      if (fx.getFault_UnstableSupplyV().getValue() || fx.getFault_Undervoltage().getValue()) {
-        entry.alert3.setText(String.format("Device '%s' (ID %s) has reported unstable power supply and/or undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
-        entry.alert3.set(true);
-      } 
-      return;
-    } else if (entry.type == Constants.Hardware.DeviceType.VictorSPX) {
-      WPI_VictorSPX spx = (WPI_VictorSPX) entry.device();
-      Faults f = new Faults();
-      spx.getFaults(f);
-      if (f.SupplyUnstable || f.SupplyOverV || f.UnderVoltage) {
-        entry.alert3.setText(String.format("Device '%s' (ID %s) has reported unstable power supply and/or undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
-        entry.alert3.set(true);
+    switch (entry.type) {
+      case TalonFX:
+        TalonFX fx = (TalonFX) entry.device();
+        if (fx.getFault_UnstableSupplyV().getValue() || fx.getFault_Undervoltage().getValue()) {
+          entry.alert3.setText(String.format("Device '%s' (ID %s) has reported unstable power supply and/or undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
+          entry.alert3.set(true);
+        } 
+        break;
+      case VictorSPX:
+        WPI_VictorSPX spx = (WPI_VictorSPX) entry.device();
+        Faults f = new Faults();
+        spx.getFaults(f);
+        if (f.SupplyUnstable || f.SupplyOverV || f.UnderVoltage) {
+          entry.alert3.setText(String.format("Device '%s' (ID %s) has reported unstable power supply and/or undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
+          entry.alert3.set(true);
+        }
+        break;
+      case CANcoder:
+        CANcoder cc = (CANcoder) entry.device();
+        if (cc.getFault_Undervoltage().getValue()) {
+          entry.alert3.setText(String.format("Device '%s' (ID %s) has reported undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
+          entry.alert3.set(true);
+        }
+        break;
+      case Pigeon:
+        Pigeon2 pig = (Pigeon2) entry.device();
+        if (pig.getFault_Undervoltage().getValue()) {
+          entry.alert3.setText(String.format("Device '%s' (ID %s) has reported undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
+          entry.alert3.set(true);
+        }
+        break;  
       }
-      return;
-    } else if (entry.type == Constants.Hardware.DeviceType.CANcoder) {
-      CANcoder cc = (CANcoder) entry.device();
-      if (cc.getFault_Undervoltage().getValue()) {
-        entry.alert3.setText(String.format("Device '%s' (ID %s) has reported undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
-        entry.alert3.set(true);
-      }
-    } else if (entry.type == Constants.Hardware.DeviceType.Pigeon) {
-      Pigeon2 pig = (Pigeon2) entry.device();
-      if (pig.getFault_Undervoltage().getValue()) {
-        entry.alert3.setText(String.format("Device '%s' (ID %s) has reported undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
-        entry.alert3.set(true);
-      }
-    }
+    // if (entry.type == Constants.Hardware.DeviceType.TalonFX) {
+    //   TalonFX fx = (TalonFX) entry.device();
+    //   if (fx.getFault_UnstableSupplyV().getValue() || fx.getFault_Undervoltage().getValue()) {
+    //     entry.alert3.setText(String.format("Device '%s' (ID %s) has reported unstable power supply and/or undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
+    //     entry.alert3.set(true);
+    //   } 
+    //   return;
+    // } else if (entry.type == Constants.Hardware.DeviceType.VictorSPX) {
+    //   WPI_VictorSPX spx = (WPI_VictorSPX) entry.device();
+    //   Faults f = new Faults();
+    //   spx.getFaults(f);
+    //   if (f.SupplyUnstable || f.SupplyOverV || f.UnderVoltage) {
+    //     entry.alert3.setText(String.format("Device '%s' (ID %s) has reported unstable power supply and/or undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
+    //     entry.alert3.set(true);
+    //   }
+    //   return;
+    // } else if (entry.type == Constants.Hardware.DeviceType.CANcoder) {
+    //   CANcoder cc = (CANcoder) entry.device();
+    //   if (cc.getFault_Undervoltage().getValue()) {
+    //     entry.alert3.setText(String.format("Device '%s' (ID %s) has reported undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
+    //     entry.alert3.set(true);
+    //   }
+    // } else if (entry.type == Constants.Hardware.DeviceType.Pigeon) {
+    //   Pigeon2 pig = (Pigeon2) entry.device();
+    //   if (pig.getFault_Undervoltage().getValue()) {
+    //     entry.alert3.setText(String.format("Device '%s' (ID %s) has reported undervoltage most recently at timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
+    //     entry.alert3.set(true);
+    //   }
+    // }
     return;
   }
   
@@ -227,12 +264,14 @@ public class CANUtil extends SubsystemBase {
     if (!pigeonChecked) {
       if (entry.type == Constants.Hardware.DeviceType.Pigeon) {
         Pigeon2 pig = (Pigeon2) entry.device();
-        if (pig.getStickyFault_BootIntoMotion().getValue() || pig.getStickyFault_BootupAccelerometer().getValue() || pig.getStickyFault_BootupGyroscope().getValue() || pig.getStickyFault_BootupMagnetometer().getValue()) {
-          entry.alert4.setText(String.format("Pigeon '%s' (ID %s) has reported one or more issues during startup. These issues do not influence functionality of the Pigeon, but ensure that the robot is not in motion during startup in future. Timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
-          entry.alert4.set(true);
-          pig.clearStickyFaults();
+        if (pig.isConnected()) {
+          if (pig.getStickyFault_BootIntoMotion().getValue() || pig.getStickyFault_BootupAccelerometer().getValue() || pig.getStickyFault_BootupGyroscope().getValue() || pig.getStickyFault_BootupMagnetometer().getValue()) {
+            entry.alert4.setText(String.format("Pigeon '%s' (ID %s) has reported one or more issues during startup. These issues do not influence functionality of the Pigeon, but ensure that the robot is not in motion during startup in future. Timestamp: %s", entry.name, entry.canId, Timer.getFPGATimestamp()));
+            entry.alert4.set(true);
+            pig.clearStickyFaults();
+          }
+          pigeonChecked = true;
         }
-        pigeonChecked = true;
       }
       return;
     }

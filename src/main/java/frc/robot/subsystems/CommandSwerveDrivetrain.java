@@ -72,6 +72,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     private final CANUtil kCANUtil = CANUtil.getInstance();
 
+    @SuppressWarnings("unused") 
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
         .withDeadband(MaxSpeed * Constants.Swerve.kDeadbandFraction)
         .withRotationalDeadband(MaxAngularRate * Constants.Swerve.kDeadbandFraction) // Add a `% deadband
@@ -93,6 +94,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         )
     );
 
+    @SuppressWarnings("unused") 
     /* SysId routine for characterizing steer. This is used to find PID gains for the steer motors. */
     private final SysIdRoutine m_sysIdRoutineSteer = new SysIdRoutine(
         new SysIdRoutine.Config(
@@ -109,6 +111,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         )
     );
 
+    @SuppressWarnings("unused") 
     /*
      * SysId routine for characterizing rotation.
      * This is used to find PID gains for the FieldCentricFacingAngle HeadingController.
@@ -457,9 +460,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     //     pointToPose(pose, velX, velY);
     // }
 
-
-    private double angleError = 0.0;
-
     // public void pointToPose(Pose2d pose, double velX, double velY, NetworkTablesIO table) {
     //     Pose2d currentPose = table.getNetworkPose();
         
@@ -551,9 +551,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         // double offset = targetRotationRelative.getRadians() - curPose.getRotation().getRadians();
         // double offset = Math.abs(targetRotationRelative.getRadians());
         // double offset = Math.toDegrees(Math.acos((-targetPoseRelative.getX()*curPose.getRotation().getSin() - targetPoseRelative.getY()*curPose.getRotation().getCos()) / targetPoseRelative.getNorm()));
-        double offset = Math.toDegrees(Math.atan2(target.getY() - curPose.getY(), target.getX() - curPose.getX()));
-        offset = offset - curPose.getRotation().getDegrees();
-        offset = Math.toRadians(normalizeDegrees(offset));
+        double offset = Math.atan2(target.getY() - curPose.getY(), target.getX() - curPose.getX());
+        offset = offset - curPose.getRotation().getRadians();
+        offset = normalizeRadians(offset);
         // double offset2 = Math.toDegrees(curPose.getRotation().getRadians())-offset;
         // SmartDashboard.putNumber("currposeradians", curPose.getRotation().getRadians());
         // SmartDashboard.putNumber("pointoffset", offset);
@@ -568,10 +568,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     public double[] calculatePointOffsetRotationRequirement(Translation2d target) {
         Pose2d curPose = this.getState().Pose;
         Translation2d targetPoseRelative = target.minus(curPose.getTranslation());
-        Rotation2d targetRotationRelative = new Rotation2d(Math.atan2(-targetPoseRelative.getY(), -targetPoseRelative.getX())).rotateBy(Rotation2d.k180deg);
-        double offset = Math.toDegrees(Math.atan2(target.getY() - curPose.getY(), target.getX() - curPose.getX()));
-        offset = offset - curPose.getRotation().getDegrees();
-        offset = Math.toRadians(normalizeDegrees(offset));
+        Rotation2d targetRotationRelative = new Rotation2d(Math.atan2(-targetPoseRelative.getY(), -targetPoseRelative.getX())).rotateBy(Rotation2d.kPi);
+        double offset = Math.atan2(target.getY() - curPose.getY(), target.getX() - curPose.getX());
+        offset = offset - curPose.getRotation().getRadians();
+        offset = normalizeRadians(offset);
 
         double req = point.HeadingController.calculate(
             curPose.getRotation().getRadians(), 
@@ -586,6 +586,13 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         if (angle > 180) angle -= 360;
         if (angle < -180) angle += 360;
         return angle;
+    }
+    public static double normalizeRadians(double angle) {
+        return Math.atan2(Math.sin(angle), Math.cos(angle));
+        // angle = angle % (2*Math.PI);
+        // if (angle > Math.PI) angle -= 2*Math.PI;
+        // if (angle < -Math.PI) angle += 2*Math.PI;
+        // return angle;
     }
 
 
@@ -612,18 +619,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     //         this.m_hubPose = this.redHubPose;
     //     }
     // }
-
-    public double getPointOffset() {
-        double x = this.angleError;
-        return x;
-    }
-
-    public boolean getAligned() {
-        // double x = getPointOffset();
-        // System.out.println(x);
-        boolean a = Math.abs(getPointOffset()) <= 0.35;
-        return a;
-    }
 
     // public Command pointToHubCommand(boolean isRedAlliance, DoubleSupplier velX, DoubleSupplier velY, NetworkTablesIO networkTablesIO) {
     //     // return run(() -> PointToHub(isRedAlliance, velX, velY, networkTablesIO));

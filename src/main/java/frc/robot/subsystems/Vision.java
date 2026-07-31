@@ -28,21 +28,20 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 
 public class Vision extends SubsystemBase {
-    public PhotonPoseEstimator poseEstimator;
-    public Optional<EstimatedRobotPose> poseEstimate = Optional.empty();
+    private PhotonPoseEstimator poseEstimator;
+    private Optional<EstimatedRobotPose> poseEstimate = Optional.empty();
 
-    public final PhotonCamera cameraAlpha = new PhotonCamera(Constants.Vision.kCameraAlphaName);
-    public final PhotonCamera cameraBeta = new PhotonCamera(Constants.Vision.kCameraBetaName);
+    private final PhotonCamera cameraAlpha = new PhotonCamera(Constants.Vision.kCameraAlphaName);
+    private final PhotonCamera cameraBeta = new PhotonCamera(Constants.Vision.kCameraBetaName);
     
-    public static final AprilTagFieldLayout kTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
-    public static final Transform3d kRobotToCamAlphaSim = new Transform3d(new Translation3d(0.345, 0.1, 0.5), new Rotation3d(0, 23*(Math.PI/180), 0));
-    public static final Transform3d kRobotToCamBetaSim = new Transform3d(new Translation3d(-2.0, 0.0, 3.0), new Rotation3d(0, 0.84, 0)); // -1.5708 radians = 90 degrees
+    private static final AprilTagFieldLayout kTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
+    private static final Transform3d kRobotToCamAlphaSim = new Transform3d(new Translation3d(0.345, 0.1, 0.5), new Rotation3d(0, 23*(Math.PI/180), 0));
+    private static final Transform3d kRobotToCamBetaSim = new Transform3d(new Translation3d(-2.0, 0.0, 3.0), new Rotation3d(0, 0.84, 0)); // -1.5708 radians = 90 degrees
 
-    public static final Transform3d kRobotToCamAlpha = new Transform3d(new Translation3d(-0.25, -0.0, 0.52), new Rotation3d(0, 23*(Math.PI/180), 0));
-    public static final Transform3d kRobotToCamBeta = new Transform3d(new Translation3d(0.0, 0.0, 0.0), new Rotation3d(0, 0.84, 0)); // -1.5708 radians = 90 degrees
+    private static final Transform3d kRobotToCamAlpha = new Transform3d(new Translation3d(0.55, -0.0, 0.56), new Rotation3d(0, 23*(Math.PI/180), 0));
+    // private static final Transform3d kRobotToCamBeta = new Transform3d(new Translation3d(0.0, 0.0, 0.0), new Rotation3d(0, 0.84, 0)); // -1.5708 radians = 90 degrees
 
     private final CommandSwerveDrivetrain m_drivetrain;
-    private final NetworkTablesIO m_networkTablesIO;
 
     private final VisionSystemSim visionSim = new VisionSystemSim("sim");
     // private final TargetModel targetModel = TargetModel.kAprilTag36h11;
@@ -57,15 +56,14 @@ public class Vision extends SubsystemBase {
     private double m_lastVisionMeasurementUpdate = 0.0;
     private static final double kVisionMeasurementMinDt = 0.2; // 200ms
 
-    public boolean visionEnabled = true;
-    public Pose2d drivetrainPose = new Pose2d();
+    private boolean visionEnabled = true;
+    private Pose2d drivetrainPose = new Pose2d();
 
     /*
      * Create a new vision instance with our drivetrain and networktables.
      */
-    public Vision(CommandSwerveDrivetrain drivetrain, NetworkTablesIO networkTablesIO) {
+    public Vision(CommandSwerveDrivetrain drivetrain) {
         m_drivetrain = drivetrain;
-        m_networkTablesIO = networkTablesIO;
 
         // poseEstimator = new PhotonPoseEstimator(kTagLayout, PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR, kRobotToCamAlpha);
         poseEstimator = new PhotonPoseEstimator(kTagLayout, kRobotToCamAlpha);

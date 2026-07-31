@@ -8,6 +8,7 @@ import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
+import edu.wpi.first.wpilibj.AddressableLEDBufferView;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.Timer;
@@ -30,6 +31,8 @@ public class Led extends SubsystemBase {
     private AddressableLED l_led;
 
     private AddressableLEDBuffer l_ledBuffer;
+    private AddressableLEDBufferView l_ledLeftBuffer;
+    private AddressableLEDBufferView l_ledRightBuffer;
 
     private Constants.Led.StatusList Status = Constants.Led.StatusList.DISCONNECT; // set to disconnect at start to avoid nullpointer
 
@@ -55,7 +58,7 @@ public class Led extends SubsystemBase {
     // REVERSE,
     // SPINUP
 
-    private LEDPattern pDisconnectMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.1, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(5));
+    private LEDPattern pDisconnectMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.2, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(5));
     private LEDPattern pDisconnectBase = LEDPattern.solid(Color.kDarkRed); 
     private LEDPattern pDisconnect = pDisconnectBase.mask(pDisconnectMask).atBrightness(Percent.of(100));
 
@@ -78,6 +81,11 @@ public class Led extends SubsystemBase {
     private LEDPattern pAligned = LEDPattern.solid(Color.kAquamarine).atBrightness(Percent.of(100));
     private LEDPattern pNotready = LEDPattern.solid(Color.kCrimson).atBrightness(Percent.of(100));
 
+    private LEDPattern pDebug = LEDPattern.solid(Color.kOrange).atBrightness(Percent.of(100)).breathe(Second.of(3));
+
+    private LEDPattern pDSConnected = LEDPattern.solid(Color.kAquamarine).atBrightness(Percent.of(100));
+    private LEDPattern pDSDisconnected = LEDPattern.solid(Color.kCrimson).atBrightness(Percent.of(100));
+
     private double progressVar1 = 0;
     private double progressVar2 = 0;
     private double progressVar3 = 0;
@@ -86,6 +94,7 @@ public class Led extends SubsystemBase {
     private java.util.function.DoubleSupplier progressSup3 = () -> 0.0;
     private LEDPattern progressMask1 = LEDPattern.progressMaskLayer(() -> progressVar1);
     private LEDPattern progressMask2 = LEDPattern.progressMaskLayer(() -> progressVar2);
+    @SuppressWarnings("unused") 
     private LEDPattern progressMask3 = LEDPattern.progressMaskLayer(() -> progressVar3);
 
     private LEDPattern pSetpointMarker = LEDPattern.steps(Map.of(0, Color.kBlack, 0.74, Color.kLime, 0.76, Color.kBlack));
@@ -122,11 +131,11 @@ public class Led extends SubsystemBase {
     }
 
     public Command displayShooterSepoint(DoubleSupplier progress) {
-        return new FunctionalCommand(() -> setProgressVar(1, progress), () -> setStatus(Constants.Led.StatusList.SPINUP), interrupted -> nothing(), () -> false, this);
+        return new FunctionalCommand(() -> setProgressVar(1, progress), () -> setStatus(Constants.Led.StatusList.PMSHOOTER), interrupted -> nothing(), () -> false, this);
     }
 
     public Command displayHoodPosition(DoubleSupplier percentage) {
-        return new FunctionalCommand(() -> setProgressVar(1, percentage), () -> setStatus(Constants.Led.StatusList.HOOD), interrupted -> nothing(), () -> false, this);
+        return new FunctionalCommand(() -> setProgressVar(1, percentage), () -> setStatus(Constants.Led.StatusList.PMHOOD), interrupted -> nothing(), () -> false, this);
     }
 
     public void nothing() {}
@@ -145,6 +154,8 @@ public class Led extends SubsystemBase {
     public Led() {
         l_led = new AddressableLED(Constants.Hardware.kLedId);
         l_ledBuffer = new AddressableLEDBuffer(Constants.Hardware.kLedLength);
+        l_ledRightBuffer = l_ledBuffer.createView(0, 35);
+        l_ledLeftBuffer = l_ledBuffer.createView(36, 71).reversed();
         l_led.setLength(l_ledBuffer.getLength());
         l_led.setData(l_ledBuffer);
         this.isFlashing = false;
@@ -168,24 +179,41 @@ public class Led extends SubsystemBase {
 
         updateFlashing();
         try {
-                switch (this.Status) {
+                switch (Status) {
                     case DISCONNECT:
-                        pDisconnect.applyTo(this.l_ledBuffer);
+                        // pDisconnect.applyTo(this.l_ledBuffer);
+                        pDisconnect.applyTo(this.l_ledLeftBuffer);
+                        pDisconnect.applyTo(this.l_ledRightBuffer);
                         break;
                     case DISABLED:
-                        pDisabled.applyTo(this.l_ledBuffer);
+                        // pDisabled.applyTo(this.l_ledBuffer);
+                        pDisabled.applyTo(this.l_ledLeftBuffer);
+                        pDisabled.applyTo(this.l_ledRightBuffer);
                         break;
                     case ESTOPPED:
-                        pEStopped.applyTo(this.l_ledBuffer);
+                        // pEStopped.applyTo(this.l_ledBuffer);
+                        pEStopped.applyTo(this.l_ledRightBuffer);
+                        pEStopped.applyTo(this.l_ledLeftBuffer);
                         break;
                     case BLANK:
                         ledBlank.applyTo(this.l_ledBuffer);
                         break;
                     case TELEOP:
-                        pTeleop.applyTo(this.l_ledBuffer);
+                        // pTeleop.applyTo(this.l_ledBuffer);
+                        pTeleop.applyTo(this.l_ledLeftBuffer);
+                        pTeleop.applyTo(this.l_ledRightBuffer);
                         break;
                     case AUTONOMOUS:
                         pAutonomous.applyTo(this.l_ledBuffer);
+                        break;
+                    case DEBUG:
+                        pDebug.applyTo(this.l_ledBuffer);
+                        break;
+                    case DSCONNECTED:
+                        pDSConnected.applyTo(this.l_ledBuffer);
+                        break;
+                    case DSDISCONNECTED:
+                        pDSDisconnected.applyTo(this.l_ledBuffer);
                         break;
                     case ALIGNED:
                         pAligned.applyTo(this.l_ledBuffer);
@@ -196,11 +224,13 @@ public class Led extends SubsystemBase {
                     case SHOOTING:
                         pShooting.applyTo(this.l_ledBuffer);
                         break;
-                    case SPINUP:
-                        pShooterSetpoint.applyTo(this.l_ledBuffer);
+                    case PMSHOOTER:
+                        pShooterSetpoint.applyTo(this.l_ledLeftBuffer);
+                        pShooterSetpoint.applyTo(this.l_ledRightBuffer);
                         break;
-                    case HOOD:
-                        pHoodPosition.applyTo(this.l_ledBuffer);
+                    case PMHOOD:
+                        pHoodPosition.applyTo(this.l_ledRightBuffer);
+                        pHoodPosition.applyTo(this.l_ledLeftBuffer);
                         break;
                 }
         } catch (NullPointerException e) {}
@@ -312,7 +342,14 @@ public class Led extends SubsystemBase {
      * flash the led's with a specific status a specific number of times at a specific speed (seconds)
      */
     public Command flash(Constants.Led.StatusList status, int numFlashes, double speed) {
-        return runOnce(() -> this.startFlashing(status, numFlashes, speed)).andThen(() -> this.setStatus(Constants.Led.StatusList.ESTOPPED));
+        // return runOnce(() -> this.startFlashing(status, numFlashes, speed));
+        return new FunctionalCommand(
+            () -> this.startFlashing(status, numFlashes, speed),
+            () -> this.nothing(),
+            interrupted -> stopFlashing(),
+            () -> !isFlashing,
+            this
+        );
     }
 
     /*

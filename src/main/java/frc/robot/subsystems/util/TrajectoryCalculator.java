@@ -11,23 +11,16 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.NetworkTableValue;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+// import edu.wpi.first.networktables.NetworkTable;
+// import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.Constants;
-import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.NetworkTablesIO;
 
 
 public class TrajectoryCalculator extends SubsystemBase {
-    private final NetworkTableInstance ntInst = NetworkTableInstance.getDefault();
+    // private final NetworkTableInstance ntInst = NetworkTableInstance.getDefault();
     private NetworkTablesIO networkTablesIO;
-    private final NetworkTable ntTrajCalcTable = ntInst.getTable("TrajectoryCalculator");
+    // private final NetworkTable ntTrajCalcTable = ntInst.getTable("TrajectoryCalculator");
     
     private final Pose2d blueHubPose = new Pose2d(4.65, 4, new Rotation2d());
     private final Pose2d redHubPose = new Pose2d(12, 4, new Rotation2d());
@@ -40,10 +33,10 @@ public class TrajectoryCalculator extends SubsystemBase {
     private Collection<Pose2d> redPoses = new ArrayList<>(); 
     private Collection<Pose2d> bluePoses = new ArrayList<>(); 
 
-    private double hubHeightMeters = 1.8288;
-    private double hubHeightInches = 72;
+    // private double hubHeightMeters = 1.8288;
+    // private double hubHeightInches = 72;
 
-    private SwerveDriveState driveState = new SwerveDriveState();
+    // private SwerveDriveState driveState = new SwerveDriveState();
 
     private boolean isRedAlliance = true;
 

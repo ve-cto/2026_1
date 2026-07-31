@@ -1,17 +1,10 @@
 package frc.robot.subsystems;
 
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.function.BooleanSupplier;
-
-import com.ctre.phoenix.motorcontrol.VictorSPXSimCollection;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Encoder;
-import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj.simulation.EncoderSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -19,23 +12,24 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants;
 import frc.robot.subsystems.util.CANUtil;
 public class Stopper extends SubsystemBase {
-  WPI_VictorSPX m_motor;
+  private WPI_VictorSPX m_motor;
   private final CANUtil kCANUtil = CANUtil.getInstance();
   
   private final Encoder s_Encoder = new Encoder(Constants.Hardware.kStopperEncoderAChannel, Constants.Hardware.kStopperEncoderBChannel);
   private final DigitalInput s_switch = new DigitalInput(Constants.Hardware.kStopperSwitchChannel);
   private double mechanismPosition = 0;
-  private double mechanismPositionDebounced = 0;
   private PIDController mechanismPIDController = new PIDController(0.005, 0.001, 0.0);
-  private Queue<Double> mechanismPositionHistory = new ArrayBlockingQueue<>(3);
   private boolean switchTriggered = false;
-  private double extendedPosition = -700;
+  private double extendedPosition = Constants.Stopper.kExtendedPosition;
   private boolean hasHomed = false;
   
   public Stopper() {
     m_motor = new WPI_VictorSPX(Constants.Hardware.kStopperId);
     kCANUtil.registerDevice("Stopper", Constants.Hardware.kStopperId, Constants.Hardware.DeviceType.VictorSPX, m_motor);
     s_Encoder.setSamplesToAverage(10);
+    SmartDashboard.putNumber("Stopper/kp", mechanismPIDController.getP()); // use defaults
+    SmartDashboard.putNumber("Stopper/ki", mechanismPIDController.getI());
+    SmartDashboard.putNumber("Stopper/kd", mechanismPIDController.getD());
   }
 
   @Override
@@ -64,7 +58,7 @@ public class Stopper extends SubsystemBase {
 
   public void extend(double pos) {
     double t = mechanismPIDController.calculate(-pos);
-    t = Math.abs(t) < 0.3 ? Math.copySign(0.3, t) : t;
+    t = Math.abs(t) < Constants.Stopper.kDeadbandFraction ? Math.copySign(Constants.Stopper.kDeadbandFraction, t) : t;
     this.run(t);
   }
 
@@ -94,10 +88,13 @@ public class Stopper extends SubsystemBase {
     }
   }
 
+  public void updateMotorConfigs() {
+    this.mechanismPIDController.setPID(SmartDashboard.getNumber("Stopper/kp", 0), SmartDashboard.getNumber("Stopper/ki", 0), SmartDashboard.getNumber("Stopper/kd", 0));
+  }
+
   public Trigger isHomed() {
     return new Trigger(() -> this.switchTriggered);
   }
-
   public Command stopCommand() {
     return runEnd(() -> this.stop(), ()-> this.coast());
   }
@@ -109,5 +106,8 @@ public class Stopper extends SubsystemBase {
   }
   public Command homeExtendCommand() {
     return runEnd(() -> this.homeExtend(), () -> this.coast());
+  }
+  public Command updateMotorConfigsCommand() {
+    return runOnce(() -> this.updateMotorConfigs());
   }
 }
