@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 // import edu.wpi.first.networktables.NetworkTable;
 // import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -18,7 +19,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 
 public class TrajectoryCalculator extends SubsystemBase {
-    // private final NetworkTableInstance ntInst = NetworkTableInstance.getDefault();
+    // private final NetworkTableInstance ntInst = NetworkTableInstance.getDefault();gtrfc 
     private NetworkTablesIO networkTablesIO;
     // private final NetworkTable ntTrajCalcTable = ntInst.getTable("TrajectoryCalculator");
     
@@ -44,27 +45,29 @@ public class TrajectoryCalculator extends SubsystemBase {
         {0.9, 2700},
         {1.9, 2800},
         {2.9, 3300},
-        {3.9, 3690},
-        {5.5, 3995},
-        {6.5, 4200}
+        {3.25, 3390},
+        {4, 3625},
+        {5.3, 3950},
+        {7, 3950} // hold
     };
 
     private double hoodAnglePairsDegrees[][] = {
         {0.9, 70},
         {1.9, 65},
         {2.9, 62},
-        {3.9, 45},
-        {5.5, 47},
-        {6.5, 45},
+        {3.25, 60},
+        {4, 59},
+        {5.3, 57},
+        {7, 57} // hold
     };
 
     private double ballAirtimePairs[][] = { // seconds
         {0.9, 0.89},
         {1.9, 1},
         {2.9, 1.2},
-        {3.9, 1.3},
-        {5.5, 1.4},
-        {6.5, 1.5},
+        {4, 1.3},
+        {5.3, 1.5},
+        {7, 1.5} // hold
     };
 
     private InterpolatingDoubleTreeMap shooterSpeedTreeMap = new InterpolatingDoubleTreeMap();
@@ -93,7 +96,9 @@ public class TrajectoryCalculator extends SubsystemBase {
     }
 
     @Override
-    public void periodic() {}
+    public void periodic() {
+        SmartDashboard.putNumber("TrajectoryCalculator/Hub Distance", this.getHubDistance());
+    }
 
     public Supplier<Pose2d> getClosestAllianceFuel(Supplier<SwerveDriveState> state) {
         return () -> {

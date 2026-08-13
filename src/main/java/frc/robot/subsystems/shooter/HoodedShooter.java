@@ -35,7 +35,6 @@ public class HoodedShooter extends SubsystemBase {
     private final double kCountExtended = Constants.Hood.kCountExtended; // pulses for the max reach of the hood / actuator
     private Queue<Double> s_hoodPositionQueue = new ArrayBlockingQueue<>(5);
 
-    // private PIDController kPidController = new PIDController(0.001, 0, 0);
     private boolean homed = false;
     private boolean isAtSetpoint = false;
     private double setpoint = 0.0;
@@ -169,7 +168,7 @@ public class HoodedShooter extends SubsystemBase {
     }
 
     public Command gotoDashboard() {
-        return this.runEnd(() -> this.runClosedLoopAngle(() -> SmartDashboard.getNumber("Hood/HOODrequestPosition", 80)), () -> this.hold());
+        return this.runEnd(() -> this.runClosedLoopAngle(() -> SmartDashboard.getNumber("Hood/requestPosition", 60)), () -> this.hold());
     }
 
     public void runClosedLoop(DoubleSupplier setpoint) {

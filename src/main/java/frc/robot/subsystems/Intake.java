@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -12,18 +13,23 @@ public class Intake extends SubsystemBase {
     private final WPI_VictorSPX m_intake;
     private final CANUtil kCANUtil = CANUtil.getInstance();
 
+    private double output = 0.0;
+
     /** Instantiate */
     public Intake() {
         m_intake = new WPI_VictorSPX(Constants.Hardware.kIntakeId);
         kCANUtil.registerDevice("m_intake", Constants.Hardware.kIntakeId, Constants.Hardware.DeviceType.VictorSPX, m_intake);
     }
 
-    public void periodic() {}
+    public void periodic() {
+        SmartDashboard.putNumber("Intake/Intake Output", this.output);
+    }
 
     /* 
     * run the intake motor at the provided speed 
     */
     public void run(double speed) {
+        this.output = speed;
         m_intake.set(speed);
     }
 
@@ -31,6 +37,7 @@ public class Intake extends SubsystemBase {
     * stop the intake motor with braking force
     */
     public void stopIntake() {
+        this.output = 0;
         m_intake.stopMotor();
     }
 
@@ -44,21 +51,21 @@ public class Intake extends SubsystemBase {
      * run the intake forward with the speed given in constants
      */
     public Command runIntakeCommand() {
-        return this.startEnd(() -> this.run(Constants.Intake.kIntakeForwardSpeed), () -> this.stopIntake());
+        return this.runEnd(() -> this.run(Constants.Intake.kIntakeForwardSpeed), () -> this.stopIntake());
     }
 
     /*
      * run the intake backward with the speed given in constants
      */
     public Command reverseIntakeCommand() {
-        return this.startEnd(() -> this.run(Constants.Intake.kIntakeReverseSpeed), () -> this.stopIntake());
+        return this.runEnd(() -> this.run(Constants.Intake.kIntakeReverseSpeed), () -> this.stopIntake());
     }
 
     /*
      * run the intake with a given speed
      */
     public Command runIntakeCommand(double speed) {
-        return this.startEnd(() -> this.run(speed), () -> this.stopIntake());
+        return this.runEnd(() -> this.run(speed), () -> this.stopIntake());
     }
 
     public Command coastCommand() {

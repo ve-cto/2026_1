@@ -1,0 +1,68 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Q1"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Q2"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Q3"
+          }
+        },
+        {
+          "type": "deadline",
+          "data": {
+            "commands": [
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 5.0
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ShootAtHub"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Q4"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "P2"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "P3"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

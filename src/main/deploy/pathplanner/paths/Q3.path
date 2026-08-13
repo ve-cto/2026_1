@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.256350626118068,
-        "y": 3.9782110912343462
+        "x": 1.3219400855920111,
+        "y": 5.16713266761769
       },
       "prevControl": null,
       "nextControl": {
-        "x": 1.5138090335171073,
-        "y": 3.7866669981830974
+        "x": 2.3219400855920114,
+        "y": 5.16713266761769
       },
-      "isLocked": false,
-      "linkedName": "Front of Hub"
+      "isLocked": true,
+      "linkedName": "Q2"
     },
     {
       "anchor": {
-        "x": 1.3431532258064522,
-        "y": 5.856314516129032
+        "x": 3.068659058487874,
+        "y": 5.684679029957205
       },
       "prevControl": {
-        "x": 1.9015067050023364,
-        "y": 5.453172408099918
+        "x": 2.3311554921540654,
+        "y": 5.141255349500715
       },
       "nextControl": null,
-      "isLocked": false,
-      "linkedName": "Outside Alliance Fuel"
+      "isLocked": true,
+      "linkedName": "Q3"
     }
   ],
   "rotationTargets": [],
@@ -42,12 +42,12 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -179.36340642403653
+    "rotation": -55.080597987542276
   },
   "reversed": false,
-  "folder": "Other",
+  "folder": "Q",
   "idealStartingState": {
-    "velocity": 0,
+    "velocity": 1.0,
     "rotation": 0.0
   },
   "useDefaultConstraints": true

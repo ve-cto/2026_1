@@ -2,6 +2,7 @@ package frc.robot.subsystems;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -21,6 +22,9 @@ public class Arm extends SubsystemBase {
     private PIDController armPIDController = new PIDController(0.01, 0.0, 0.0);
     private Queue<Double> armPositionHistory = new ArrayBlockingQueue<>(3);
     private final CANUtil kCANUtil = CANUtil.getInstance();
+
+    private double output = 0.0;
+    
     /** Instantiate */
     public Arm() {
         m_arm = new WPI_VictorSPX(Constants.Hardware.kArmId);
@@ -34,6 +38,7 @@ public class Arm extends SubsystemBase {
         }
         armPositionHistory.add(armPosition);
         armPositionDebounced = armPositionHistory.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+        SmartDashboard.putNumber("Arm/Arm Output", this.output);
     }
 
     /* 
@@ -57,12 +62,17 @@ public class Arm extends SubsystemBase {
         return armPositionDebounced <= Constants.Intake.kArmRetractedPosition;
     }
 
+    private void run(double speed) {
+        this.output = speed;
+        m_arm.set(speed);
+    }
+
     /*
     * extend the intake 
     */
     public void extend() {
         if (!isExtended()) {
-            m_arm.set(armPIDController.calculate(armPositionDebounced, Constants.Intake.kArmExtendedPosition));
+            this.run(-armPIDController.calculate(armPositionDebounced, Constants.Intake.kArmExtendedPosition));
         }
     }
 
@@ -71,18 +81,15 @@ public class Arm extends SubsystemBase {
     */
     public void retract() {
         if (!isRetracted()) {
-            m_arm.set(armPIDController.calculate(armPositionDebounced, Constants.Intake.kArmRetractedPosition));
+            this.run(armPIDController.calculate(armPositionDebounced, Constants.Intake.kArmRetractedPosition));
         }
-    }
-
-    public void moveArm(double speed) {
-        m_arm.set(speed);
     }
 
     /*
      * stop the pivot motor with braking force
      */
     public void stopArm() {
+        this.output = 0;
         m_arm.stopMotor();
     }
 
@@ -90,11 +97,11 @@ public class Arm extends SubsystemBase {
      * stop the pivot motor without braking force
      */
     public void coastArm() {
-        m_arm.set(0.0);
+        this.run(0.0);
     }
 
     public Command moveArmCommand(double speed) {
-        return this.startEnd(() -> this.moveArm(speed), () -> this.stopArm());
+        return this.startEnd(() -> this.run(speed), () -> this.stopArm());
     }
 
     public Command coastCommand() {

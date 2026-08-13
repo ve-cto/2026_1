@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 7.523631484794276,
-        "y": 7.028586762075134
+        "x": 3.670622222222222,
+        "y": 7.572233333333333
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.458729874776386,
-        "y": 6.606726296958855
+        "x": 2.8228555555555555,
+        "y": 7.387088888888888
       },
-      "isLocked": true,
-      "linkedName": "Outside Center Fuel Field Left"
+      "isLocked": false,
+      "linkedName": null
     },
     {
       "anchor": {
-        "x": 7.523631484794276,
-        "y": 5.308694096601073
+        "x": 3.3198222222222227,
+        "y": 5.584366666666666
       },
       "prevControl": {
-        "x": 7.500997548283645,
-        "y": 5.5576673982179985
+        "x": 2.9690222222222227,
+        "y": 6.461366666666666
       },
       "nextControl": null,
-      "isLocked": false,
-      "linkedName": "Inside Center Fuel Field Left"
+      "isLocked": true,
+      "linkedName": "A1"
     }
   ],
   "rotationTargets": [],
@@ -33,7 +33,7 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 1.0,
+    "maxVelocity": 3.0,
     "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -42,13 +42,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -90.0
+    "rotation": -49.33231398318852
   },
   "reversed": false,
-  "folder": "Field Left Specific",
+  "folder": "A",
   "idealStartingState": {
     "velocity": 0,
     "rotation": -90.0
   },
-  "useDefaultConstraints": false
+  "useDefaultConstraints": true
 }

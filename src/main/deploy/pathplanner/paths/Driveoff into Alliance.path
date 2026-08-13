@@ -3,29 +3,29 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 1.3431532258064522,
-        "y": 5.856314516129032
+        "x": 3.6219,
+        "y": 7.562488888888888
       },
       "prevControl": null,
       "nextControl": {
-        "x": 0.7726209677419362,
-        "y": 5.827056451612903
+        "x": 2.949533333333333,
+        "y": 7.542999999999999
       },
       "isLocked": false,
-      "linkedName": "Outside Alliance Fuel"
+      "linkedName": null
     },
     {
       "anchor": {
-        "x": 0.5678145161290329,
-        "y": 5.856314516129032
+        "x": 0.5718888888888889,
+        "y": 7.562488888888888
       },
       "prevControl": {
-        "x": 1.2334354838709691,
-        "y": 5.900201612903227
+        "x": 1.7314777777777783,
+        "y": 7.601466666666666
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "In Alliance Fuel"
+      "linkedName": null
     }
   ],
   "rotationTargets": [],
@@ -34,7 +34,7 @@
   "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 3.0,
-    "maxAcceleration": 1.0,
+    "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
@@ -42,13 +42,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 180.0
+    "rotation": -89.61803379527099
   },
   "reversed": false,
   "folder": "Other",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -179.36340642403653
+    "rotation": -89.52254622269044
   },
-  "useDefaultConstraints": false
+  "useDefaultConstraints": true
 }

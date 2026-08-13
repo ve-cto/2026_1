@@ -28,6 +28,8 @@ import com.pathplanner.lib.commands.FollowPathCommand;
 
 import static edu.wpi.first.units.Units.*;
 
+import java.util.function.DoubleSupplier;
+
 // import java.util.function.BooleanSupplier;
 
 // Command Setup and Controllers
@@ -105,20 +107,34 @@ public class RobotContainer {
     private final TrajectoryCalculator m_trajectoryCalculator = new TrajectoryCalculator(m_networkTablesIO);
     // #endregion Subsystems
 
+    // private final Command shootAtHub(DoubleSupplier x, DoubleSupplier y) {
+    //     return new ShootAtTarget(
+    //             () -> m_networkTablesIO.getOwnHubPose(), 
+    //             x,
+    //             y,
+    //             m_shooter, 
+    //             m_hood, 
+    //             drivetrain, 
+    //             m_feeder, 
+    //             m_stopper,
+    //             m_trajectoryCalculator
+    //         );
+    //     }
+
     private final SendableChooser<Command> autoChooser;
 
     private final Alert alertEstopped = new Alert("Robot has been EStopped and requires a restart or redeploy to resume operation.", AlertType.kError);
 
     public RobotContainer() {
-        NamedCommands.registerCommand("ExtendIntake", m_arm.extendIntakeCommand());
-        NamedCommands.registerCommand("RetractIntake", m_arm.retractIntakeCommand());
-        NamedCommands.registerCommand("RunIntake", m_intake.runIntakeCommand());
+        NamedCommands.registerCommand("ExtendIntake", m_arm.moveArmCommand(-0.7));
+        NamedCommands.registerCommand("RetractIntake", m_arm.moveArmCommand(0.9));
+        NamedCommands.registerCommand("RunIntake", m_intake.runIntakeCommand(-0.8));
         NamedCommands.registerCommand("ReverseIntake", m_intake.reverseIntakeCommand());
-        NamedCommands.registerCommand("HoodHub", m_hood.gotoAngleCommand(m_trajectoryCalculator.getRequiredHoodAngleHub()));
-        NamedCommands.registerCommand("ShooterHub", m_shooter.runRPMCommand(m_trajectoryCalculator.getRequiredShooterSpeedHub()));
+        // NamedCommands.registerCommand("HoodHub", m_hood.gotoAngleCommand(m_trajectoryCalculator.getRequiredHoodAngleHub()));
+        // NamedCommands.registerCommand("ShooterHub", m_shooter.runRPMCommand(m_trajectoryCalculator.getRequiredShooterSpeedHub()));
         NamedCommands.registerCommand("Feed", m_feeder.feedCommand());
-        NamedCommands.registerCommand("ShooterStop", m_shooter.coastCommand());
-        NamedCommands.registerCommand("HomeHood", m_hood.resetHomeCommand());
+        // NamedCommands.registerCommand("ShooterStop", m_shooter.coastCommand());
+        // NamedCommands.registerCommand("HomeHood", m_hood.resetHomeCommand());
         NamedCommands.registerCommand("ShootAtHub", new ShootAtTargetAutonomous(
                 () -> m_networkTablesIO.getOwnHubPose(), 
                 m_shooter, 
@@ -128,10 +144,38 @@ public class RobotContainer {
                 m_stopper,
                 m_trajectoryCalculator
             ));
+        NamedCommands.registerCommand("ShootAtAllianceFuel", new ShootAtTargetAutonomous(
+                m_trajectoryCalculator.getClosestAllianceFuel(() -> drivetrain.getStateCopy()), 
+                m_shooter, 
+                m_hood, 
+                drivetrain, 
+                m_feeder, 
+                m_stopper,
+                m_trajectoryCalculator
+            ));
+            
+
+        // NamedCommands.registerCommand("ShootAtHub", new ShootAtTarget(
+        //         () -> m_networkTablesIO.getOwnHubPose(), 
+        //         () -> 0.0,
+        //         () -> 0.0,
+        //         m_shooter, 
+        //         m_hood, 
+        //         drivetrain, 
+        //         m_feeder, 
+        //         m_stopper,
+        //         m_trajectoryCalculator
+        //     ));
 
         // Create our auto chooser
         // Pathplanner autos get populated into it automatically
-        autoChooser = AutoBuilder.buildAutoChooser();
+        // for (String auto : AutoBuilder.getAllAutoNames()) {
+        //     if (auto.contains("FLIP")) {
+                
+        //     }
+        // }
+        autoChooser = BetterAutoChooser.buildAutoChooser();
+        // autoChooser = FlippingAutoBuilder.buildAutoChooser();
         SmartDashboard.putData("Auto Chooser", autoChooser);
 
         // Warm up on-the-fly path generation
@@ -264,9 +308,9 @@ public class RobotContainer {
         // primaryJoystick.povRight().whileTrue(
         //     m_stopper.extendCommand()
         // );
-        // primaryJoystick.b().whileTrue(m_shooter.runDashboard());
-        // primaryJoystick.a().whileTrue(m_hood.gotoDashboard());
-        // primaryJoystick.x().whileTrue(m_hood.homeCommand());
+        primaryJoystick.b().whileTrue(m_shooter.runDashboard().alongWith(m_hood.gotoDashboard()));
+        primaryJoystick.x().whileTrue(m_hood.homeCommand());
+        primaryJoystick.a().whileTrue(m_feeder.feedCommand().alongWith(m_stopper.homeCommand()));
 
         primaryJoystick.rightTrigger().and(() -> m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
             new ShootAtTarget(
@@ -401,5 +445,6 @@ public class RobotContainer {
     public Command getAutonomousCommand() {
         // Return the auto selected by the chooser on SmartDashboard
         return autoChooser.getSelected();
+        // .andThen(shootAtHub.withTimeout(5));
     }
 }

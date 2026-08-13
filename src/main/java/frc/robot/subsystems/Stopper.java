@@ -35,13 +35,14 @@ public class Stopper extends SubsystemBase {
   @Override
   public void periodic() {
     this.mechanismPosition = s_Encoder.getDistance();
-    SmartDashboard.putNumber("Stopper/stopperDist", this.mechanismPosition);
+    SmartDashboard.putNumber("Stopper/Encoder Distance", this.mechanismPosition);
     this.switchTriggered = s_switch.get();
+    SmartDashboard.putBoolean("Stopper/Switch", this.switchTriggered);
   }
 
   public void home() {
     if (!switchTriggered) {
-      this.run(-0.4);
+      this.run(0.4);
     } else {
       this.stop();
       this.reset();
@@ -49,11 +50,11 @@ public class Stopper extends SubsystemBase {
   }
 
   public void run(double speed) {
-    m_motor.set(speed);
+    m_motor.set(-speed);
   }
 
   public void extend() {
-    this.run(-mechanismPIDController.calculate(this.mechanismPosition, extendedPosition));
+    this.run(mechanismPIDController.calculate(this.mechanismPosition, extendedPosition));
   }
 
   public void extend(double pos) {
