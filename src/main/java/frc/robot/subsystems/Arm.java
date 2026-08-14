@@ -1,11 +1,14 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+import static edu.wpi.first.units.Units.Volts;
 
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -67,6 +70,11 @@ public class Arm extends SubsystemBase {
         m_arm.set(speed);
     }
 
+    private void runVoltage(Voltage speed) {
+        this.output = speed.magnitude();
+        m_arm.setVoltage(speed);
+    }
+
     /*
     * extend the intake 
     */
@@ -106,6 +114,10 @@ public class Arm extends SubsystemBase {
 
     public Command coastCommand() {
         return this.startEnd(() -> this.coastArm(), () -> this.coastArm());
+    }
+
+    public Command runVoltageCommand(Voltage voltage) {
+        return this.startEnd(() -> this.runVoltage(voltage), () -> this.coastArm());
     }
 
     /*

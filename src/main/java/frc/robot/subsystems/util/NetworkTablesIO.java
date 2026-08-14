@@ -90,6 +90,7 @@ public class NetworkTablesIO extends SubsystemBase {
     
     // If the match time is -1, IE, it doesn't exist or the robot is not in a match, replace with 0.
     SmartDashboard.putNumber("Match/Match Time", DriverStation.getMatchTime() == -1 ? 0 : Double.valueOf(oneDP.format(DriverStation.getMatchTime())));
+    SmartDashboard.putNumber("Match/Shift Remaining Time", DriverStation.getMatchTime() == -1 ? 0 : Double.valueOf(oneDP.format(this.getShiftRemainingTime())));
 
     if (redAllianceZoneRect.contains(getNetworkPose().getTranslation())) {
       this.isInRedAllianceZone = true;
@@ -203,6 +204,9 @@ public class NetworkTablesIO extends SubsystemBase {
       return Constants.DS.GameState.AUTONOMOUS;
     }
     double matchTime = getMatchTime();
+    if (matchTime == -1) {
+      return Constants.DS.GameState.NONE;
+    }
     if (matchTime > 130) {
       return Constants.DS.GameState.TRANSITION;
     } else if (matchTime > 105) {
@@ -216,6 +220,30 @@ public class NetworkTablesIO extends SubsystemBase {
     } else {
       return Constants.DS.GameState.ENDGAME;
     }
+  }
+
+  public double getShiftRemainingTime() {
+    Constants.DS.GameState state = getMatchState();
+    SmartDashboard.putString("Match/State", state.toString());
+    switch (state) {
+      case AUTONOMOUS:
+        return getMatchTime();
+      case TRANSITION:
+        return (getMatchTime() - 130);
+      case SHIFT1:
+        return (getMatchTime() - 105);
+      case SHIFT2:
+        return (getMatchTime() - 80);
+      case SHIFT3:
+        return (getMatchTime() - 55);
+      case SHIFT4:
+        return (getMatchTime() - 30);
+      case ENDGAME:
+        return getMatchTime();
+      default:
+        break;
+    }
+    return 0.0;
   }
   
   public boolean isHubActive() {

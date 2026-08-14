@@ -48,6 +48,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 // import frc.robot.commands.drive.PointToAngle;
 import frc.robot.subsystems.Stopper;
 import frc.robot.Constants.Led.StatusList;
+import frc.robot.commands.ShootAtAllianceFuel;
 // import frc.robot.commands.drive.PointToPose;
 // import frc.robot.commands.RunDebugMotors;
 import frc.robot.commands.ShootAtTarget;
@@ -126,9 +127,9 @@ public class RobotContainer {
     private final Alert alertEstopped = new Alert("Robot has been EStopped and requires a restart or redeploy to resume operation.", AlertType.kError);
 
     public RobotContainer() {
-        NamedCommands.registerCommand("ExtendIntake", m_arm.moveArmCommand(-0.7));
-        NamedCommands.registerCommand("RetractIntake", m_arm.moveArmCommand(0.9));
-        NamedCommands.registerCommand("RunIntake", m_intake.runIntakeCommand(-0.8));
+        NamedCommands.registerCommand("ExtendIntake", m_arm.runVoltageCommand(Volts.of(-11.0)));
+        NamedCommands.registerCommand("RetractIntake", m_arm.runVoltageCommand(Volts.of(10.5)));
+        NamedCommands.registerCommand("RunIntake", m_intake.runIntakeCommand(-1.0));
         NamedCommands.registerCommand("ReverseIntake", m_intake.reverseIntakeCommand());
         // NamedCommands.registerCommand("HoodHub", m_hood.gotoAngleCommand(m_trajectoryCalculator.getRequiredHoodAngleHub()));
         // NamedCommands.registerCommand("ShooterHub", m_shooter.runRPMCommand(m_trajectoryCalculator.getRequiredShooterSpeedHub()));
@@ -245,8 +246,8 @@ public class RobotContainer {
             m_feeder.coastCommand()
         );
         m_shooter.setDefaultCommand(
-            m_shooter.coastCommand()
-            // m_shooter.brakeCommand()
+            // m_shooter.coastCommand()
+            m_shooter.runRPMCommand(() -> 1800)
         );
         m_hood.setDefaultCommand(
             m_hood.homeCommand()
@@ -290,16 +291,19 @@ public class RobotContainer {
 
         // --------------------------------------------------------------------------------------------------------------------------------
     
+        // primaryJoystick.rightBumper().whileTrue(
+        //     m_intake.runIntakeCommand()
+        // );
         primaryJoystick.rightBumper().whileTrue(
-            m_intake.runIntakeCommand()
+            m_intake.runIntakeVoltageCommand(Volts.of(-11.5))
         );
 
         primaryJoystick.leftTrigger().whileTrue(
-            m_arm.moveArmCommand(-0.7)
+            m_arm.runVoltageCommand(Volts.of(-11))
         );
 
         primaryJoystick.leftBumper().whileTrue(
-            m_arm.moveArmCommand(0.9)
+            m_arm.runVoltageCommand(Volts.of(11))
         );
 
         // primaryJoystick.povLeft().whileTrue(
@@ -332,8 +336,27 @@ public class RobotContainer {
             // )
         );
 
+        // primaryJoystick.rightTrigger().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
+        //     new ShootAtTarget(
+        //         m_trajectoryCalculator.getClosestAllianceFuel(() -> drivetrain.getStateCopy()), 
+        //         () -> -primaryJoystick.getLeftY() * MaxSpeed, 
+        //         () -> -primaryJoystick.getLeftX() * MaxSpeed, 
+        //         m_shooter, 
+        //         m_hood, 
+        //         drivetrain, 
+        //         m_feeder, 
+        //         m_stopper,
+        //         m_trajectoryCalculator
+        //     )
+        //     // .alongWith(
+        //     //     Commands.runEnd(
+        //     //         () -> primaryJoystick.setRumble(RumbleType.kBothRumble, 0.5),
+        //     //         () -> primaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
+        //     //     )
+        //     // )
+        // );
         primaryJoystick.rightTrigger().and(() -> !m_networkTablesIO.isInOwnAllianceZone()).whileTrue(
-            new ShootAtTarget(
+            new ShootAtAllianceFuel(
                 m_trajectoryCalculator.getClosestAllianceFuel(() -> drivetrain.getStateCopy()), 
                 () -> -primaryJoystick.getLeftY() * MaxSpeed, 
                 () -> -primaryJoystick.getLeftX() * MaxSpeed, 
@@ -341,8 +364,7 @@ public class RobotContainer {
                 m_hood, 
                 drivetrain, 
                 m_feeder, 
-                m_stopper,
-                m_trajectoryCalculator
+                m_stopper
             )
             // .alongWith(
             //     Commands.runEnd(
@@ -350,6 +372,10 @@ public class RobotContainer {
             //         () -> primaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
             //     )
             // )
+        );
+
+        primaryJoystick.rightTrigger().and(primaryJoystick.leftStick()).whileTrue(
+          m_shooter.runRPMCommand(() -> 1000).alongWith(m_hood.gotoAngleCommand(() -> 50)).alongWith(m_feeder.feedCommand()).alongWith(m_stopper.homeCommand())  
         );
 
         // primaryJoystick.rightTrigger().whileTrue(
@@ -380,66 +406,66 @@ public class RobotContainer {
 
         // --------------------------------------------------------------------------------------------------------------------------------
         // Enable secondary controller overrides
-        primaryJoystick.back().and(primaryJoystick.start()).onTrue(
-            m_networkTablesIO.setSecondaryJoystickEnabled(() -> !primaryJoystick.rightStick().getAsBoolean())  // allow disabling if modifier pressed (just grow extra fingers)
-        );
-        // secondaryJoystick.back().and(secondaryJoystick.start()).onTrue(
-        //     m_networkTablesIO.setSecondaryJoystickEnabled(() -> true)  
+        // primaryJoystick.back().and(primaryJoystick.start()).onTrue(
+        //     m_networkTablesIO.setSecondaryJoystickEnabled(() -> !primaryJoystick.rightStick().getAsBoolean())  // allow disabling if modifier pressed (just grow extra fingers)
         // );
+        // // secondaryJoystick.back().and(secondaryJoystick.start()).onTrue(
+        // //     m_networkTablesIO.setSecondaryJoystickEnabled(() -> true)  
+        // // );
         
-        m_networkTablesIO.secondaryJoystickEnabled().and(RobotModeTriggers.teleop()).whileTrue(
-            m_led.display(StatusList.DEBUG)
-        ); 
+        // m_networkTablesIO.secondaryJoystickEnabled().and(RobotModeTriggers.teleop()).whileTrue(
+        //     m_led.display(StatusList.DEBUG)
+        // ); 
 
-        secondaryJoystick.b().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
-            m_feeder.feedCommand()
-        );
-        secondaryJoystick.b().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
-            m_stopper.homeCommand()
-        );
+        // secondaryJoystick.b().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
+        //     m_feeder.feedCommand()
+        // );
+        // secondaryJoystick.b().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
+        //     m_stopper.homeCommand()
+        // );
 
-        secondaryJoystick.povLeft().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
-            m_stopper.homeCommand()
-        );
-        secondaryJoystick.povRight().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
-            m_stopper.extendCommand()
-        );
+        // secondaryJoystick.povLeft().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
+        //     m_stopper.homeCommand()
+        // );
+        // secondaryJoystick.povRight().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
+        //     m_stopper.extendCommand()
+        // );
 
-        secondaryJoystick.povUp().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
-            m_hood.manualShiftPercentage(() -> 0.1)  
-        );
-        secondaryJoystick.povDown().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
-            m_hood.manualShiftPercentage(() -> -0.1)  
-        );
-        secondaryJoystick.povUp().negate().and(secondaryJoystick.povDown().negate()).and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
-            m_hood.manualShiftPercentage()
-        );
+        // secondaryJoystick.povUp().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
+        //     m_hood.manualShiftPercentage(() -> 0.1)  
+        // );
+        // secondaryJoystick.povDown().and(m_networkTablesIO.secondaryJoystickEnabled()).onTrue(
+        //     m_hood.manualShiftPercentage(() -> -0.1)  
+        // );
+        // secondaryJoystick.povUp().negate().and(secondaryJoystick.povDown().negate()).and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
+        //     m_hood.manualShiftPercentage()
+        // );
 
-        secondaryJoystick.a().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
-            m_shooter.runPercentageCommand(() -> secondaryJoystick.getRightTriggerAxis(), 2000, 4000)
-            // .alongWith(
-            //     m_hood.gotoPercentageCommand(() -> secondaryJoystick.getLeftTriggerAxis())
-            // )
-        );
+        // secondaryJoystick.a().and(m_networkTablesIO.secondaryJoystickEnabled()).whileTrue(
+        //     m_shooter.runPercentageCommand(() -> secondaryJoystick.getRightTriggerAxis(), 2000, 4000)
+        //     // .alongWith(
+        //     //     m_hood.gotoPercentageCommand(() -> secondaryJoystick.getLeftTriggerAxis())
+        //     // )
+        // );
 
-        // Rumble controller when the hub state switches
-        m_networkTablesIO.hubActive().onChange(
-            Commands.runOnce(
-                    () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 1.0)
-                ).andThen(
-                    Commands.waitSeconds(0.25)
-                ).andThen(
-                    () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
-                ).andThen(
-                    Commands.waitSeconds(0.1)
-                ).andThen(
-                    () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 1.0)
-                ).andThen(
-                    Commands.waitSeconds(0.25)
-                ).andThen(
-                    () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
-                ).onlyIf(m_networkTablesIO.secondaryJoystickEnabled()).ignoringDisable(true)
-        );
+        // // Rumble controller when the hub state switches
+        // m_networkTablesIO.hubActive().onChange(
+        //     Commands.runOnce(
+        //             () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 1.0)
+        //         ).andThen(
+        //             Commands.waitSeconds(0.25)
+        //         ).andThen(
+        //             () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
+        //         ).andThen(
+        //             Commands.waitSeconds(0.1)
+        //         ).andThen(
+        //             () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 1.0)
+        //         ).andThen(
+        //             Commands.waitSeconds(0.25)
+        //         ).andThen(
+        //             () -> secondaryJoystick.setRumble(RumbleType.kBothRumble, 0.0)
+        //         ).onlyIf(m_networkTablesIO.secondaryJoystickEnabled()).ignoringDisable(true)
+        // );
     }
 
     public Command getAutonomousCommand() {

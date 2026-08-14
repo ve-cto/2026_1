@@ -270,7 +270,7 @@ public class Shooter extends SubsystemBase {
     return this.runEnd(() -> 
       {
         double r = min + percentage.getAsDouble() * (max - min);
-        SmartDashboard.putNumber("AAAAA", r);
+        // SmartDashboard.putNumber("AAAAA", r);
         this.runRPM(() -> r);
       }
     , () -> {

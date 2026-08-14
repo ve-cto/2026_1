@@ -65,6 +65,17 @@
           "name": "RunIntake"
         }
       }
+    },
+    {
+      "name": "ExtendIntake",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": 0.3916272788656305,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "ExtendIntake"
+        }
+      }
     }
   ],
   "globalConstraints": {

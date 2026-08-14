@@ -45,7 +45,8 @@ public final class Constants {
             TalonFX,
             VictorSPX,
             CANcoder,
-            Pigeon
+            Pigeon,
+            SparkMax
         }
     }
 
