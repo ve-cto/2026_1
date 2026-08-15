@@ -22,6 +22,7 @@ public class Stopper extends SubsystemBase {
   private boolean switchTriggered = false;
   private double extendedPosition = Constants.Stopper.kExtendedPosition;
   private boolean hasHomed = false;
+  private double output = 0;
   
   public Stopper() {
     m_motor = new WPI_VictorSPX(Constants.Hardware.kStopperId);
@@ -38,6 +39,7 @@ public class Stopper extends SubsystemBase {
     SmartDashboard.putNumber("Stopper/Encoder Distance", this.mechanismPosition);
     this.switchTriggered = s_switch.get();
     SmartDashboard.putBoolean("Stopper/Switch", this.switchTriggered);
+    SmartDashboard.putNumber("Stopper/Output", this.output);
   }
 
   public void home() {
@@ -50,6 +52,7 @@ public class Stopper extends SubsystemBase {
   }
 
   public void run(double speed) {
+    this.output = speed;
     m_motor.set(-speed);
   }
 

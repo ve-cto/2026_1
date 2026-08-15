@@ -42,7 +42,7 @@
     {
       "name": "Constraints Zone",
       "minWaypointRelativePos": 0,
-      "maxWaypointRelativePos": 0.8605459057071938,
+      "maxWaypointRelativePos": 0.8009925558312615,
       "constraints": {
         "maxVelocity": 0.8,
         "maxAcceleration": 3.0,
@@ -76,11 +76,22 @@
           "name": "ExtendIntake"
         }
       }
+    },
+    {
+      "name": "ExtendStopper",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": 1.0,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "ExtendStopper"
+        }
+      }
     }
   ],
   "globalConstraints": {
     "maxVelocity": 3.0,
-    "maxAcceleration": 3.0,
+    "maxAcceleration": 2.8,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,

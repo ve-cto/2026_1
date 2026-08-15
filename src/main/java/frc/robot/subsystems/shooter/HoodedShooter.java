@@ -201,7 +201,6 @@ public class HoodedShooter extends SubsystemBase {
 
         // SmartDashboard.putNumber("HOODd1", d);
 
-        // TODO:
         // if (d > kAngleHomed || d < kAngleExtended) {
         //     String warningMessage = String.format("WARNING: Requested hood angle %.2f is %s than  closest attainable angle %.2f", d, (d > kAngleHomed) ? "greater" : "less", (d > kAngleHomed) ? kAngleHomed : kAngleExtended);
         //     DriverStation.reportWarning(warningMessage, true);

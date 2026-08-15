@@ -13,6 +13,7 @@ import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.revrobotics.spark.SparkMax;
 
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Timer;
@@ -138,6 +139,8 @@ public class CANUtil extends SubsystemBase {
           updateDisconnectAlert(entry, false);
         }
         break;
+      case SparkMax:
+        break;
     }
   }
 
@@ -171,6 +174,9 @@ public class CANUtil extends SubsystemBase {
       devices.add(entry);
     } else if (deviceType == Constants.Hardware.DeviceType.Pigeon) {
       CANDeviceEntry entry = new CANDeviceEntry(deviceName, deviceId, deviceType, device, new Alert("CANAlerts_","Connected?", AlertType.kError), new Alert("CANAlerts_","Last time connected", AlertType.kWarning), new Alert("CANAlerts_","undervoltage", AlertType.kWarning), new Alert("CANAlerts_","problem during startup", AlertType.kInfo));
+      devices.add(entry);
+    } else if (deviceType == Constants.Hardware.DeviceType.SparkMax) {
+      CANDeviceEntry entry = new CANDeviceEntry(deviceName, deviceId, deviceType, device, new Alert("CANAlerts_","Connected?", AlertType.kError), new Alert("CANAlerts_","Last time connected", AlertType.kWarning), new Alert("CANAlerts_","undervoltage", AlertType.kWarning), new Alert("CANAlerts_","", AlertType.kInfo));
       devices.add(entry);
     }
     // System.out.println(String.format("Device %s with ID %s of type %s has been successfully registered to CANUtil", deviceName, deviceId, deviceType));
@@ -215,6 +221,8 @@ public class CANUtil extends SubsystemBase {
           entry.alert3.set(true);
         }
         break;  
+      case SparkMax:
+        break;
       }
     // if (entry.type == Constants.Hardware.DeviceType.TalonFX) {
     //   TalonFX fx = (TalonFX) entry.device();

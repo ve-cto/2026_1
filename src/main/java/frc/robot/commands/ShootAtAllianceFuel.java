@@ -57,7 +57,7 @@ public class ShootAtAllianceFuel extends Command {
   public void execute() {
     this.target = targetSup.get();
     shooter.runRPM(() -> 3000);
-    hood.runClosedLoopAngle(() -> 50);
+    hood.runClosedLoopAngle(() -> 53);
     // Object[] data = trajcalc.getHoodShooter(drivetrain.getStateCopy(), target);
     // shooter.runRPM(() -> (Double) data[1]);
     // hood.runClosedLoopAngle(() -> (Double) data[0]);

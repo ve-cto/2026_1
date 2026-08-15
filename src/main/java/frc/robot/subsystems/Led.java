@@ -60,31 +60,31 @@ public class Led extends SubsystemBase {
 
     private LEDPattern pDisconnectMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.2, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(5));
     private LEDPattern pDisconnectBase = LEDPattern.solid(Color.kDarkRed); 
-    private LEDPattern pDisconnect = pDisconnectBase.mask(pDisconnectMask).atBrightness(Percent.of(100));
+    private LEDPattern pDisconnect = pDisconnectBase.mask(pDisconnectMask).atBrightness(Percent.of(50));
 
     private LEDPattern pDisabledMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.5, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(10));
     private LEDPattern pDisabledBase = LEDPattern.gradient(GradientType.kContinuous, Color.kOrangeRed, Color.kDarkRed);
-    private LEDPattern pDisabled = pDisabledBase.mask(pDisabledMask).atBrightness(Percent.of(100));
+    private LEDPattern pDisabled = pDisabledBase.mask(pDisabledMask).atBrightness(Percent.of(50));
 
     private LEDPattern pEStoppedBase = LEDPattern.gradient(GradientType.kContinuous, Color.kRed, Color.kOrange).atBrightness(Percent.of(100));
     // private LEDPattern pEStopped = pEStoppedBase.breathe(Seconds.of(3)).atBrightness(Percent.of(100));
-    private LEDPattern pEStopped = pEStoppedBase.atBrightness(Percent.of(100));
+    private LEDPattern pEStopped = pEStoppedBase.atBrightness(Percent.of(50));
 
     private LEDPattern pTeleopMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.4, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(10));
     private LEDPattern pTeleopBase = LEDPattern.gradient(GradientType.kContinuous, Color.kBlue, Color.kPurple).scrollAtRelativeSpeed(Percent.per(Second).of(20));
-    private LEDPattern pTeleop = pTeleopBase.mask(pTeleopMask).atBrightness(Percent.of(100));
+    private LEDPattern pTeleop = pTeleopBase.mask(pTeleopMask).atBrightness(Percent.of(50));
 
     private LEDPattern pAutonomousMask = LEDPattern.steps(Map.of(0, Color.kWhite, 0.8, Color.kBlack)).scrollAtRelativeSpeed(Percent.per(Second).of(50));
     private LEDPattern pAutonomousBase = LEDPattern.rainbow(255, 200).scrollAtRelativeSpeed(Percent.per(Second).of(25));
-    private LEDPattern pAutonomous = pAutonomousBase.mask(pAutonomousMask).atBrightness(Percent.of(100));
+    private LEDPattern pAutonomous = pAutonomousBase.mask(pAutonomousMask).atBrightness(Percent.of(30));
 
     private LEDPattern pAligned = LEDPattern.solid(Color.kAquamarine).atBrightness(Percent.of(100));
     private LEDPattern pNotready = LEDPattern.solid(Color.kCrimson).atBrightness(Percent.of(100));
 
     private LEDPattern pDebug = LEDPattern.solid(Color.kOrange).atBrightness(Percent.of(100)).breathe(Second.of(3));
 
-    private LEDPattern pDSConnected = LEDPattern.solid(Color.kAquamarine).atBrightness(Percent.of(100));
-    private LEDPattern pDSDisconnected = LEDPattern.solid(Color.kCrimson).atBrightness(Percent.of(100));
+    private LEDPattern pDSConnected = LEDPattern.solid(Color.kAquamarine).atBrightness(Percent.of(50));
+    private LEDPattern pDSDisconnected = LEDPattern.solid(Color.kCrimson).atBrightness(Percent.of(50));
 
     private double progressVar1 = 0;
     private double progressVar2 = 0;

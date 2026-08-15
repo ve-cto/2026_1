@@ -3,25 +3,41 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.651133333333333,
-        "y": 7.523511111111111
+        "x": 3.7155920114122676,
+        "y": 7.483152639087019
       },
       "prevControl": null,
       "nextControl": {
-        "x": 4.65113333333333,
-        "y": 7.523511111111111
+        "x": 8.386933333333335,
+        "y": 7.7963555555555555
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 7.958177777777777,
-        "y": 7.523511111111111
+        "x": 7.928944444444447,
+        "y": 4.424777777777778
       },
       "prevControl": {
-        "x": 6.958177777777777,
-        "y": 7.523511111111111
+        "x": 7.958177777777779,
+        "y": 5.740277777777778
+      },
+      "nextControl": {
+        "x": 7.906196530934167,
+        "y": 3.401121669815147
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.18836666666667,
+        "y": 0.7218888888888886
+      },
+      "prevControl": {
+        "x": 7.753544444444449,
+        "y": 1.4332333333333325
       },
       "nextControl": null,
       "isLocked": false,
@@ -42,13 +58,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": -90.0
+    "rotation": -179.559271927239
   },
   "reversed": false,
-  "folder": "Other",
+  "folder": "Disrupt",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -88.90878377473737
+    "rotation": -90.0
   },
   "useDefaultConstraints": true
 }

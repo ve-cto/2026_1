@@ -3,16 +3,16 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.670622222222222,
-        "y": 7.572233333333333
+        "x": 3.6767760342368048,
+        "y": 7.4702139800285305
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.8228555555555555,
-        "y": 7.387088888888888
+        "x": 2.8290093675701384,
+        "y": 7.2850695355840855
       },
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "PSTART"
     },
     {
       "anchor": {
@@ -34,7 +34,7 @@
   "eventMarkers": [],
   "globalConstraints": {
     "maxVelocity": 3.0,
-    "maxAcceleration": 3.0,
+    "maxAcceleration": 2.8,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
@@ -48,7 +48,7 @@
   "folder": "A",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -90.0
+    "rotation": -89.21517539700814
   },
   "useDefaultConstraints": true
 }

@@ -38,8 +38,19 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
+      "name": "HomeExtend",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": 0.6158001350438873,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "HomeExtend"
+        }
+      }
+    },
+    {
       "name": "ExtendIntake",
-      "waypointRelativePos": 0.4672518568534788,
+      "waypointRelativePos": 0.5985111662530989,
       "endWaypointRelativePos": 1.0,
       "command": {
         "type": "named",
@@ -47,11 +58,17 @@
           "name": "ExtendIntake"
         }
       }
+    },
+    {
+      "name": "ExtendStopper",
+      "waypointRelativePos": 0.777852802160697,
+      "endWaypointRelativePos": 1.0,
+      "command": null
     }
   ],
   "globalConstraints": {
     "maxVelocity": 3.0,
-    "maxAcceleration": 3.0,
+    "maxAcceleration": 2.8,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,

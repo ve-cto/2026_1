@@ -35,9 +35,13 @@ public class IntakeNeo extends SubsystemBase {
     //     m_intake.set(speed);
     // }
 
-    public void runRPM(double rpm) {
-        this.m_intake.getClosedLoopController().setSetpoint(rpm, ControlType.kVelocity);
+    // public void runRPM(double rpm) {
+    //     this.m_intake.getClosedLoopController().setSetpoint(rpm, ControlType.kVelocity);
         
+    // }
+
+    public void run(double speed) {
+        this.m_intake.set(speed);
     }
 
     /*
@@ -57,21 +61,21 @@ public class IntakeNeo extends SubsystemBase {
      * run the intake forward with the speed given in constants
      */
     public Command runIntakeCommand() {
-        return this.runEnd(() -> this.runRPM(Constants.Intake.kIntakeForwardSpeed), () -> this.stop());
+        return this.runEnd(() -> this.run(Constants.Intake.kIntakeForwardSpeed), () -> this.stop());
     }
 
     /*
      * run the intake backward with the speed given in constants
      */
     public Command reverseIntakeCommand() {
-        return this.runEnd(() -> this.runRPM(Constants.Intake.kIntakeReverseSpeed), () -> this.stop());
+        return this.runEnd(() -> this.run(Constants.Intake.kIntakeReverseSpeed), () -> this.stop());
     }
 
     /*
      * run the intake with a given speed
      */
     public Command runIntakeCommand(double speed) {
-        return this.runEnd(() -> this.runRPM(speed), () -> this.stop());
+        return this.runEnd(() -> this.run(speed), () -> this.stop());
     }
 
     public Command coastCommand() {

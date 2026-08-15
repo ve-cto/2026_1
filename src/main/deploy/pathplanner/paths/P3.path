@@ -3,16 +3,32 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 7.773033333333334,
-        "y": 6.4223888888888885
+        "x": 8.451141226818828,
+        "y": 6.435121255349501
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.4883828340466,
-        "y": 3.5370679188460934
+        "x": 8.166490727532095,
+        "y": 3.549800285306706
       },
       "isLocked": false,
       "linkedName": "P2"
+    },
+    {
+      "anchor": {
+        "x": 7.610128388017117,
+        "y": 5.270641940085593
+      },
+      "prevControl": {
+        "x": 7.896475812721494,
+        "y": 3.9779878514064992
+      },
+      "nextControl": {
+        "x": 7.269072832465846,
+        "y": 6.81026416230469
+      },
+      "isLocked": false,
+      "linkedName": null
     },
     {
       "anchor": {
@@ -20,8 +36,8 @@
         "y": 7.521968616262482
       },
       "prevControl": {
-        "x": 6.8208701854493565,
-        "y": 3.7438801711840246
+        "x": 7.817051884506494,
+        "y": 6.182975802689256
       },
       "nextControl": null,
       "isLocked": true,
@@ -30,15 +46,23 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 0.6844349680170563,
+      "waypointRelativePos": 0.2,
+      "rotationDegrees": -90.0
+    },
+    {
+      "waypointRelativePos": 0.745228215767636,
       "rotationDegrees": 127.88641309030686
+    },
+    {
+      "waypointRelativePos": 1.090456431535275,
+      "rotationDegrees": 90.0
     }
   ],
   "constraintZones": [
     {
       "name": "Constraints Zone",
       "minWaypointRelativePos": 0.0,
-      "maxWaypointRelativePos": 0.6887238352464498,
+      "maxWaypointRelativePos": 1.0461538461538342,
       "constraints": {
         "maxVelocity": 1.0,
         "maxAcceleration": 3.0,
@@ -54,7 +78,7 @@
     {
       "name": "RunIntake",
       "waypointRelativePos": 0,
-      "endWaypointRelativePos": 0.9966239027683995,
+      "endWaypointRelativePos": 1.7771775827143712,
       "command": {
         "type": "named",
         "data": {
@@ -65,18 +89,35 @@
     {
       "name": "ExtendIntake",
       "waypointRelativePos": 0,
-      "endWaypointRelativePos": 0.1269412559081653,
+      "endWaypointRelativePos": 0.0,
       "command": {
         "type": "named",
         "data": {
           "name": "ExtendIntake"
         }
       }
+    },
+    {
+      "name": "ExtendStopper",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": 2.0,
+      "command": null
+    },
+    {
+      "name": "StopIntake",
+      "waypointRelativePos": 1.8906144496961883,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "StopIntake"
+        }
+      }
     }
   ],
   "globalConstraints": {
     "maxVelocity": 3.0,
-    "maxAcceleration": 3.0,
+    "maxAcceleration": 2.8,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,

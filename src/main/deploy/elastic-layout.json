@@ -444,7 +444,7 @@
           {
             "title": "Match Time",
             "x": 640.0,
-            "y": 0.0,
+            "y": 384.0,
             "width": 768.0,
             "height": 384.0,
             "type": "Match Time",
@@ -459,9 +459,9 @@
           },
           {
             "title": "isHubActive",
-            "x": 640.0,
-            "y": 384.0,
-            "width": 768.0,
+            "x": 256.0,
+            "y": 0.0,
+            "width": 384.0,
             "height": 384.0,
             "type": "Boolean Box",
             "properties": {
@@ -489,20 +489,6 @@
               "false_color": 4294198070,
               "true_icon": "None",
               "false_icon": "None"
-            }
-          },
-          {
-            "title": "Swerve Drive",
-            "x": 256.0,
-            "y": 0.0,
-            "width": 384.0,
-            "height": 384.0,
-            "type": "SwerveDrive",
-            "properties": {
-              "topic": "/SmartDashboard/Swerve Drive",
-              "period": 0.06,
-              "show_robot_rotation": true,
-              "rotation_unit": "Radians"
             }
           },
           {
@@ -599,6 +585,22 @@
             "properties": {
               "topic": "/FMSInfo",
               "period": 0.06
+            }
+          },
+          {
+            "title": "Shift Remaining Time",
+            "x": 640.0,
+            "y": 0.0,
+            "width": 768.0,
+            "height": 384.0,
+            "type": "Match Time",
+            "properties": {
+              "topic": "/SmartDashboard/Match/Shift Remaining Time",
+              "period": 0.06,
+              "data_type": "double",
+              "time_display_mode": "Minutes and Seconds",
+              "red_start_time": 10,
+              "yellow_start_time": 17
             }
           }
         ]
@@ -633,7 +635,7 @@
           {
             "title": "Match Time",
             "x": 640.0,
-            "y": 0.0,
+            "y": 384.0,
             "width": 768.0,
             "height": 384.0,
             "type": "Match Time",
@@ -648,9 +650,9 @@
           },
           {
             "title": "isHubActive",
-            "x": 640.0,
-            "y": 384.0,
-            "width": 768.0,
+            "x": 256.0,
+            "y": 0.0,
+            "width": 384.0,
             "height": 384.0,
             "type": "Boolean Box",
             "properties": {
@@ -678,20 +680,6 @@
               "false_color": 4294198070,
               "true_icon": "None",
               "false_icon": "None"
-            }
-          },
-          {
-            "title": "Swerve Drive",
-            "x": 256.0,
-            "y": 0.0,
-            "width": 384.0,
-            "height": 384.0,
-            "type": "SwerveDrive",
-            "properties": {
-              "topic": "/SmartDashboard/Swerve Drive",
-              "period": 0.06,
-              "show_robot_rotation": true,
-              "rotation_unit": "Radians"
             }
           },
           {
@@ -788,6 +776,22 @@
             "properties": {
               "topic": "/FMSInfo",
               "period": 0.06
+            }
+          },
+          {
+            "title": "Match Time",
+            "x": 640.0,
+            "y": 0.0,
+            "width": 768.0,
+            "height": 384.0,
+            "type": "Match Time",
+            "properties": {
+              "topic": "/SmartDashboard/Match/Match Time",
+              "period": 0.06,
+              "data_type": "double",
+              "time_display_mode": "Minutes and Seconds",
+              "red_start_time": 10,
+              "yellow_start_time": 17
             }
           }
         ]
@@ -1460,6 +1464,35 @@
               "robot_color": 4294198070,
               "trajectory_color": 4294967295,
               "show_robot_outside_widget": true
+            }
+          },
+          {
+            "title": "Auto Chooser",
+            "x": 512.0,
+            "y": 768.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "ComboBox Chooser",
+            "properties": {
+              "topic": "/SmartDashboard/Auto Chooser",
+              "period": 0.06,
+              "sort_options": false
+            }
+          },
+          {
+            "title": "Shift Remaining Time",
+            "x": 768.0,
+            "y": 768.0,
+            "width": 256.0,
+            "height": 128.0,
+            "type": "Match Time",
+            "properties": {
+              "topic": "/SmartDashboard/Match/Shift Remaining Time",
+              "period": 0.06,
+              "data_type": "double",
+              "time_display_mode": "Minutes and Seconds",
+              "red_start_time": 20,
+              "yellow_start_time": 30
             }
           }
         ]

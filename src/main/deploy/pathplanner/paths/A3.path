@@ -44,6 +44,17 @@
       }
     },
     {
+      "name": "ExtendStopper",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": 1.0,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "ExtendStopper"
+        }
+      }
+    },
+    {
       "name": "RunIntake",
       "waypointRelativePos": 0.6858560794044669,
       "endWaypointRelativePos": 1.0,
@@ -57,7 +68,7 @@
   ],
   "globalConstraints": {
     "maxVelocity": 3.0,
-    "maxAcceleration": 3.0,
+    "maxAcceleration": 2.8,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,

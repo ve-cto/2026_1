@@ -10,6 +10,8 @@ import java.text.DecimalFormat;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
+import com.ctre.phoenix6.mechanisms.swerve.LegacySwerveRequest.RobotCentric;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rectangle2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -23,6 +25,7 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 // import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotController;
 // import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -126,6 +129,8 @@ public class NetworkTablesIO extends SubsystemBase {
     SmartDashboard.putBoolean("Vision/isInCenterField", this.isInCenterField);
     SmartDashboard.putBoolean("Match/isHubActive", this.isHubActive());
     SmartDashboard.putBoolean("Match/Secondary Overrides Enabled", this.secondaryJoystickEnabled);
+    SmartDashboard.putNumber("Match/Robot Battery Voltage", this.getRobotBatteryVoltage());
+    SmartDashboard.putBoolean("Match/Is Browning Out", this.isRobotBrowningOut().getAsBoolean());
   }
 
   public boolean getTestModeEnabled() {
@@ -220,6 +225,14 @@ public class NetworkTablesIO extends SubsystemBase {
     } else {
       return Constants.DS.GameState.ENDGAME;
     }
+  }
+
+  public double getRobotBatteryVoltage() {
+    return RobotController.getBatteryVoltage();
+  }
+
+  public Trigger isRobotBrowningOut() {
+    return new Trigger(() -> RobotController.isBrownedOut());
   }
 
   public double getShiftRemainingTime() {
