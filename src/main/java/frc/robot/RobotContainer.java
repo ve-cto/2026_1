@@ -8,7 +8,7 @@ package frc.robot;
 
 // Swerve
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
-import com.ctre.phoenix6.signals.StatusLedWhenActiveValue;
+// import com.ctre.phoenix6.signals.StatusLedWhenActiveValue;
 // import com.ctre.phoenix6.signals.StatusLedWhenActiveValue;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 // import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
@@ -19,7 +19,7 @@ import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 // Pathplanner and Poses
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import com.pathplanner.lib.auto.AutoBuilder;
+// import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.FollowPathCommand;
 
@@ -29,7 +29,7 @@ import com.pathplanner.lib.commands.FollowPathCommand;
 
 import static edu.wpi.first.units.Units.*;
 
-import java.util.function.DoubleSupplier;
+// import java.util.function.DoubleSupplier;
 
 // import java.util.function.BooleanSupplier;
 
@@ -56,7 +56,7 @@ import frc.robot.commands.ShootAtTarget;
 import frc.robot.commands.ShootAtTargetAutonomous;
 // import frc.robot.commands.drive.PointToAllianceFuel;
 // Subsystems
-import frc.robot.subsystems.Intake;
+// import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.IntakeNeo;
 import frc.robot.subsystems.Led;
 import frc.robot.subsystems.shooter.HoodedShooter;
@@ -290,6 +290,9 @@ public class RobotContainer {
         primaryJoystick.povUp().and(primaryJoystick.rightStick()).whileTrue(
             m_vision.setVisionEnabled(true).asProxy()
         );
+        // primaryJoystick.povUp().and(primaryJoystick.rightStick()).onTrue(
+        //     drivetrain.runOnce(() -> drivetrain.seedFieldCentric())
+        // );
         RobotModeTriggers.disabled().negate().and(m_vision.isVisionEnabled()).whileTrue( 
             m_vision.addVisionMeasurementCommand(() -> drivetrain.getStateCopy())
         );
@@ -380,7 +383,7 @@ public class RobotContainer {
         );
 
         primaryJoystick.rightTrigger().and(m_networkTablesIO.secondaryJoystickEnabled().negate()).and(primaryJoystick.rightStick()).whileTrue(
-          m_shooter.runRPMCommand(() -> 1000).alongWith(m_hood.gotoAngleCommand(() -> 50)).alongWith(m_feeder.feedCommand()).alongWith(m_stopper.homeCommand())  
+          m_shooter.runRPMCommand(() -> 1800).alongWith(m_hood.gotoAngleCommand(() -> 50)).alongWith(m_feeder.feedCommand()).alongWith(m_stopper.homeCommand())  
         );
 
         // primaryJoystick.rightTrigger().whileTrue(

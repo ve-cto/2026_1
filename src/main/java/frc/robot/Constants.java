@@ -9,7 +9,7 @@ package frc.robot;
 public final class Constants {
     public static final class Hardware {
         // Swerve takes up the CAN network up to value 12, thus, all motors must be assigned ID's of 13 or higher.
-        public static final int kIntakeId = 17; // minicim
+        public static final int kIntakeId = 17; // neo sparkmax
         public static final int kArmId = 16; // minicim
         public static final int kShooterLId = 18; // kraken
         public static final int kShooterRId = 19; // kraken
@@ -117,7 +117,7 @@ public final class Constants {
     public static class Shooter {
         public static final double kControlRatio = (1.0);
         public static final double kMaxOutput = 0.975; // Limit the maximum percentage output applied to the shooter motors to avoid overdraw
-        public static final double setpointDeadband = 100;
+        public static final double setpointDeadband = 150;
     }
 
     public static class Hood {

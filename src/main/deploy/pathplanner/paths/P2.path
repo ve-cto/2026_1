@@ -53,6 +53,17 @@
           "name": "ExtendStopper"
         }
       }
+    },
+    {
+      "name": "RunIntake",
+      "waypointRelativePos": 0.5374746792707631,
+      "endWaypointRelativePos": 1.0,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "RunIntake"
+        }
+      }
     }
   ],
   "globalConstraints": {
