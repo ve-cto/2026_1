@@ -89,7 +89,7 @@
     {
       "name": "ExtendIntake",
       "waypointRelativePos": 0,
-      "endWaypointRelativePos": 0.0,
+      "endWaypointRelativePos": 0.11343686698177104,
       "command": {
         "type": "named",
         "data": {

@@ -42,24 +42,35 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "ExtendStopper",
+      "name": "HomeExtendStopper",
       "waypointRelativePos": 0,
-      "endWaypointRelativePos": 1.0,
+      "endWaypointRelativePos": 0.6644159351789319,
       "command": {
         "type": "named",
         "data": {
-          "name": "ExtendStopper"
+          "name": "HomeExtendStopper"
         }
       }
     },
     {
       "name": "ExtendIntake",
-      "waypointRelativePos": 0.4672518568534788,
+      "waypointRelativePos": 0.4105334233625957,
       "endWaypointRelativePos": 1.0,
       "command": {
         "type": "named",
         "data": {
           "name": "ExtendIntake"
+        }
+      }
+    },
+    {
+      "name": "ExtendStopper",
+      "waypointRelativePos": 0.6806212018906059,
+      "endWaypointRelativePos": 1.0,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "ExtendStopper"
         }
       }
     }
